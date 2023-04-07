@@ -9,6 +9,7 @@ import sys
 import textwrap
 import xml.etree.ElementTree as Tree
 
+
 class Counter:
     def __init__(self):
         self._Count = 0
@@ -26,7 +27,7 @@ class Counter:
 class Instruction:
     _InstructionList = []
 
-    def __init__(self, opcode, arg1 = None, arg2 = None, arg3 = None):
+    def __init__(self, opcode, arg1=None, arg2=None, arg3=None):
         self._Opcode = opcode
         self._arg1 = arg1
         self._arg2 = arg2
@@ -49,14 +50,15 @@ class Instruction:
 class Argument:
     # GF/LF/TF@var_name, int/string/bool/nil/type/label => value
     _Types = {
-        'int'  : int,
-        'str'  : str,
-        'bool' : bool,
-        'type' : type,
-        'nil'  : 'nil',
+        'int': int,
+        'str': str,
+        'bool': bool,
+        'type': type,
+        'nil': 'nil',
         'label': 'label',
-        'var'  : 'var'
+        'var': 'var'
     }
+
     def __init__(self, arg_type: str, arg_value: str):
         self._VarType = None
         self._Type = self._Types[arg_type]
@@ -306,9 +308,10 @@ class MOVE(Instruction):
         arg2 = Argument(types[1], args[1])
         super().__init__("MOVE", arg1, arg2)
 
-        @classmethod
-        def execute(cls, arg1: Argument, arg2: Argument):
-            pass
+    @classmethod
+    def execute(cls, arg1: Argument, arg2: Argument):
+        pass
+
 
 class CREATEFRAME(Instruction):
     def __init__(self, arg_num, args, types):
@@ -318,9 +321,10 @@ class CREATEFRAME(Instruction):
 
         super().__init__("CREATEFRAME")
 
-        @classmethod
-        def execute(cls):
-            pass
+    @classmethod
+    def execute(cls):
+        pass
+
 
 class PUSHFRAME(Instruction):
     def __init__(self, arg_num, args, types):
@@ -330,9 +334,10 @@ class PUSHFRAME(Instruction):
 
         super().__init__("PUSHFRAME")
 
-        @classmethod
-        def execute(cls):
-            pass
+    @classmethod
+    def execute(cls):
+        pass
+
 
 class POPFRAME(Instruction):
     def __init__(self, arg_num, args, types):
@@ -342,9 +347,11 @@ class POPFRAME(Instruction):
 
         super().__init__("POPFRAME")
 
-        @classmethod
-        def execute(cls):
-            pass
+    @classmethod
+    def execute(cls):
+        pass
+
+
 class DEFVAR(Instruction):
     def __init__(self, arg_num, args, types):
         if arg_num != 1:
@@ -354,9 +361,11 @@ class DEFVAR(Instruction):
         arg1 = Argument(types[0], args[0])
         super().__init__("DEFVAR", arg1)
 
-        @classmethod
-        def execute(cls, arg1: Argument):
-            pass
+    @classmethod
+    def execute(cls, arg1: Argument):
+        pass
+
+
 class CALL(Instruction):
     def __init__(self, arg_num, args, types):
         if arg_num != 1:
@@ -366,9 +375,10 @@ class CALL(Instruction):
         arg1 = Argument(types[0], args[0])
         super().__init__("CALL", arg1)
 
-        @classmethod
-        def execute(cls, arg1: Argument):
-            pass
+    @classmethod
+    def execute(cls, arg1: Argument):
+        pass
+
 
 class RETURN(Instruction):
     def __init__(self, arg_num, args, types):
@@ -378,9 +388,11 @@ class RETURN(Instruction):
 
         super().__init__("RETURN")
 
-        @classmethod
-        def execute(cls):
-            pass
+    @classmethod
+    def execute(cls):
+        pass
+
+
 class PUSHS(Instruction):
     def __init__(self, arg_num, args, types):
         if arg_num != 1:
@@ -390,9 +402,10 @@ class PUSHS(Instruction):
         arg1 = Argument(types[0], args[0])
         super().__init__("PUSHS", arg1)
 
-        @classmethod
-        def execute(cls, arg1: Argument):
-            pass
+    @classmethod
+    def execute(cls, arg1: Argument):
+        pass
+
 
 class POPS(Instruction):
     def __init__(self, arg_num, args, types):
@@ -403,9 +416,11 @@ class POPS(Instruction):
         arg1 = Argument(types[0], args[0])
         super().__init__("POPS", arg1)
 
-        @classmethod
-        def execute(cls, arg1: Argument):
-            pass
+    @classmethod
+    def execute(cls, arg1: Argument):
+        pass
+
+
 class ADD(Instruction):
     def __init__(self, arg_num, args, types):
         if arg_num != 3:
@@ -417,9 +432,11 @@ class ADD(Instruction):
         arg3 = Argument(types[2], args[2])
         super().__init__("ADD", arg1, arg2, arg3)
 
-        @classmethod
-        def execute(cls, arg1: Argument, arg2: Argument, arg3: Argument):
-            pass
+    @classmethod
+    def execute(cls, arg1: Argument, arg2: Argument, arg3: Argument):
+        pass
+
+
 class SUB(Instruction):
     def __init__(self, arg_num, args, types):
         if arg_num != 3:
@@ -431,9 +448,11 @@ class SUB(Instruction):
         arg3 = Argument(types[2], args[2])
         super().__init__("SUB", arg1, arg2, arg3)
 
-        @classmethod
-        def execute(cls, arg1: Argument, arg2: Argument, arg3: Argument):
-            pass
+    @classmethod
+    def execute(cls, arg1: Argument, arg2: Argument, arg3: Argument):
+        pass
+
+
 class MUL(Instruction):
     def __init__(self, arg_num, args, types):
         if arg_num != 3:
@@ -445,9 +464,11 @@ class MUL(Instruction):
         arg3 = Argument(types[2], args[2])
         super().__init__("MUL", arg1, arg2, arg3)
 
-        @classmethod
-        def execute(cls, arg1: Argument, arg2: Argument, arg3: Argument):
-            pass
+    @classmethod
+    def execute(cls, arg1: Argument, arg2: Argument, arg3: Argument):
+        pass
+
+
 class IDIV(Instruction):
     def __init__(self, arg_num, args, types):
         if arg_num != 3:
@@ -459,9 +480,11 @@ class IDIV(Instruction):
         arg3 = Argument(types[2], args[2])
         super().__init__("IDIV", arg1, arg2, arg3)
 
-        @classmethod
-        def execute(cls, arg1: Argument, arg2: Argument, arg3: Argument):
-            pass
+    @classmethod
+    def execute(cls, arg1: Argument, arg2: Argument, arg3: Argument):
+        pass
+
+
 class LT(Instruction):
     def __init__(self, arg_num, args, types):
         if arg_num != 3:
@@ -473,9 +496,11 @@ class LT(Instruction):
         arg3 = Argument(types[2], args[2])
         super().__init__("LT", arg1, arg2, arg3)
 
-        @classmethod
-        def execute(cls, arg1: Argument, arg2: Argument, arg3: Argument):
-            pass
+    @classmethod
+    def execute(cls, arg1: Argument, arg2: Argument, arg3: Argument):
+        pass
+
+
 class GT(Instruction):
     def __init__(self, arg_num, args, types):
         if arg_num != 3:
@@ -487,9 +512,11 @@ class GT(Instruction):
         arg3 = Argument(types[2], args[2])
         super().__init__("GT", arg1, arg2, arg3)
 
-        @classmethod
-        def execute(cls, arg1: Argument, arg2: Argument, arg3: Argument):
-            pass
+    @classmethod
+    def execute(cls, arg1: Argument, arg2: Argument, arg3: Argument):
+        pass
+
+
 class EQ(Instruction):
     def __init__(self, arg_num, args, types):
         if arg_num != 3:
@@ -501,9 +528,11 @@ class EQ(Instruction):
         arg3 = Argument(types[2], args[2])
         super().__init__("EQ", arg1, arg2, arg3)
 
-        @classmethod
-        def execute(cls, arg1: Argument, arg2: Argument, arg3: Argument):
-            pass
+    @classmethod
+    def execute(cls, arg1: Argument, arg2: Argument, arg3: Argument):
+        pass
+
+
 class AND(Instruction):
     def __init__(self, arg_num, args, types):
         if arg_num != 3:
@@ -515,9 +544,11 @@ class AND(Instruction):
         arg3 = Argument(types[2], args[2])
         super().__init__("AND", arg1, arg2, arg3)
 
-        @classmethod
-        def execute(cls, arg1: Argument, arg2: Argument, arg3: Argument):
-            pass
+    @classmethod
+    def execute(cls, arg1: Argument, arg2: Argument, arg3: Argument):
+        pass
+
+
 class OR(Instruction):
     def __init__(self, arg_num, args, types):
         if arg_num != 3:
@@ -529,9 +560,11 @@ class OR(Instruction):
         arg3 = Argument(types[2], args[2])
         super().__init__("OR", arg1, arg2, arg3)
 
-        @classmethod
-        def execute(cls, arg1: Argument, arg2: Argument, arg3: Argument):
-            pass
+    @classmethod
+    def execute(cls, arg1: Argument, arg2: Argument, arg3: Argument):
+        pass
+
+
 class NOT(Instruction):
     def __init__(self, arg_num, args, types):
         if arg_num != 2:
@@ -542,9 +575,11 @@ class NOT(Instruction):
         arg2 = Argument(types[1], args[1])
         super().__init__("NOT", arg1, arg2)
 
-        @classmethod
-        def execute(cls, arg1: Argument, arg2: Argument):
-            pass
+    @classmethod
+    def execute(cls, arg1: Argument, arg2: Argument):
+        pass
+
+
 class INT2CHAR(Instruction):
     def __init__(self, arg_num, args, types):
         if arg_num != 2:
@@ -555,9 +590,11 @@ class INT2CHAR(Instruction):
         arg2 = Argument(types[1], args[1])
         super().__init__("INT2CHAR", arg1, arg2)
 
-        @classmethod
-        def execute(cls, arg1: Argument, arg2: Argument):
-            pass
+    @classmethod
+    def execute(cls, arg1: Argument, arg2: Argument):
+        pass
+
+
 class STRI2INT(Instruction):
     def __init__(self, arg_num, args, types):
         if arg_num != 3:
@@ -569,9 +606,11 @@ class STRI2INT(Instruction):
         arg3 = Argument(types[2], args[2])
         super().__init__("STRI2INT", arg1, arg2, arg3)
 
-        @classmethod
-        def execute(cls, arg1: Argument, arg2: Argument, arg3: Argument):
-            pass
+    @classmethod
+    def execute(cls, arg1: Argument, arg2: Argument, arg3: Argument):
+        pass
+
+
 class READ(Instruction):
     def __init__(self, arg_num, args, types):
         if arg_num != 2:
@@ -582,9 +621,11 @@ class READ(Instruction):
         arg2 = Argument(types[1], args[1])
         super().__init__("READ", arg1, arg2)
 
-        @classmethod
-        def execute(cls, arg1: Argument, arg2: Argument):
-            pass
+    @classmethod
+    def execute(cls, arg1: Argument, arg2: Argument):
+        pass
+
+
 class WRITE(Instruction):
     def __init__(self, arg_num, args, types):
         if arg_num != 1:
@@ -594,101 +635,269 @@ class WRITE(Instruction):
         arg1 = Argument(types[0], args[0])
         super().__init__("WRITE", arg1)
 
-        @classmethod
-        def execute(cls, arg1: Argument):
-            pass
+    @classmethod
+    def execute(cls, arg1: Argument):
+        pass
+
+
 class CONCAT(Instruction):
+    def __init__(self, arg_num, args, types):
+        if arg_num != 3:
+            sys.stderr.write("ERROR: Instruction CONCAT got " + arg_num + "arguments, 3 arguments expected")
+            exit(52)
+
+        arg1 = Argument(types[0], args[0])
+        arg2 = Argument(types[1], args[1])
+        arg3 = Argument(types[2], args[2])
+        super().__init__("CONCAT", arg1, arg2, arg3)
+
+    @classmethod
+    def execute(cls, arg1: Argument, arg2: Argument, arg3: Argument):
+        pass
+
+
 class STRLEN(Instruction):
+    def __init__(self, arg_num, args, types):
+        if arg_num != 2:
+            sys.stderr.write("ERROR: Instruction STRLEN got " + arg_num + "arguments, 2 arguments expected")
+            exit(52)
+
+        arg1 = Argument(types[0], args[0])
+        arg2 = Argument(types[1], args[1])
+        super().__init__("STRLEN", arg1, arg2)
+
+    @classmethod
+    def execute(cls, arg1: Argument, arg2: Argument):
+        pass
+
+
 class GETCHAR(Instruction):
+    def __init__(self, arg_num, args, types):
+        if arg_num != 3:
+            sys.stderr.write("ERROR: Instruction GETCHAR got " + arg_num + "arguments, 3 arguments expected")
+            exit(52)
+
+        arg1 = Argument(types[0], args[0])
+        arg2 = Argument(types[1], args[1])
+        arg3 = Argument(types[2], args[2])
+        super().__init__("GETCHAR", arg1, arg2, arg3)
+
+    @classmethod
+    def execute(cls, arg1: Argument, arg2: Argument, arg3: Argument):
+        pass
+
+
 class SETCHAR(Instruction):
+    def __init__(self, arg_num, args, types):
+        if arg_num != 3:
+            sys.stderr.write("ERROR: Instruction SETCHAR got " + arg_num + "arguments, 3 arguments expected")
+            exit(52)
+
+        arg1 = Argument(types[0], args[0])
+        arg2 = Argument(types[1], args[1])
+        arg3 = Argument(types[2], args[2])
+        super().__init__("SETCHAR", arg1, arg2, arg3)
+
+    @classmethod
+    def execute(cls, arg1: Argument, arg2: Argument, arg3: Argument):
+        pass
+
+
 class TYPE(Instruction):
+    def __init__(self, arg_num, args, types):
+        if arg_num != 2:
+            sys.stderr.write("ERROR: Instruction TYPE got " + arg_num + "arguments, 2 arguments expected")
+            exit(52)
+
+        arg1 = Argument(types[0], args[0])
+        arg2 = Argument(types[1], args[1])
+        super().__init__("TYPE", arg1, arg2)
+
+    @classmethod
+    def execute(cls, arg1: Argument, arg2: Argument):
+        pass
+
+
 class LABEL(Instruction):
+    def __init__(self, arg_num, args, types):
+        if arg_num != 1:
+            sys.stderr.write("ERROR: Instruction LABEL got " + arg_num + "arguments, 1 argument expected")
+            exit(52)
+
+        arg1 = Argument(types[0], args[0])
+        super().__init__("LABEL", arg1)
+
+    @classmethod
+    def execute(cls, arg1: Argument):
+        pass
+
+
 class JUMP(Instruction):
+    def __init__(self, arg_num, args, types):
+        if arg_num != 1:
+            sys.stderr.write("ERROR: Instruction JUMP got " + arg_num + "arguments, 1 argument expected")
+            exit(52)
+
+        arg1 = Argument(types[0], args[0])
+        super().__init__("JUMP", arg1)
+
+    @classmethod
+    def execute(cls, arg1: Argument):
+        pass
+
+
 class JUMPIFEQ(Instruction):
+    def __init__(self, arg_num, args, types):
+        if arg_num != 3:
+            sys.stderr.write("ERROR: Instruction JUMPIFEQ got " + arg_num + "arguments, 3 arguments expected")
+            exit(52)
+
+        arg1 = Argument(types[0], args[0])
+        arg2 = Argument(types[1], args[1])
+        arg3 = Argument(types[2], args[2])
+        super().__init__("JUMPIFEQ", arg1, arg2, arg3)
+
+    @classmethod
+    def execute(cls, arg1: Argument, arg2: Argument, arg3: Argument):
+        pass
+
+
 class JUMPIFNEQ(Instruction):
+    def __init__(self, arg_num, args, types):
+        if arg_num != 3:
+            sys.stderr.write("ERROR: Instruction JUMPIFNEQ got " + arg_num + "arguments, 3 arguments expected")
+            exit(52)
+
+        arg1 = Argument(types[0], args[0])
+        arg2 = Argument(types[1], args[1])
+        arg3 = Argument(types[2], args[2])
+        super().__init__("JUMPIFNEQ", arg1, arg2, arg3)
+
+    @classmethod
+    def execute(cls, arg1: Argument, arg2: Argument, arg3: Argument):
+        pass
+
+
 class EXIT(Instruction):
+    def __init__(self, arg_num, args, types):
+        if arg_num != 1:
+            sys.stderr.write("ERROR: Instruction EXIT got " + arg_num + "arguments, 1 argument expected")
+            exit(52)
+
+        arg1 = Argument(types[0], args[0])
+        super().__init__("EXIT", arg1)
+
+    @classmethod
+    def execute(cls, arg1: Argument):
+        pass
+
+
 class DPRINT(Instruction):
+    def __init__(self, arg_num, args, types):
+        if arg_num != 1:
+            sys.stderr.write("ERROR: Instruction DPRINT got " + arg_num + "arguments, 1 argument expected")
+            exit(52)
+
+        arg1 = Argument(types[0], args[0])
+        super().__init__("DPRINT", arg1)
+
+    @classmethod
+    def execute(cls, arg1: Argument):
+        pass
+
+
 class BREAK(Instruction):
+    def __init__(self, arg_num, args, types):
+        if arg_num != 0:
+            sys.stderr.write("ERROR: Instruction BREAK got " + arg_num + "arguments, 0 arguments expected")
+            exit(52)
+
+        super().__init__("BREAK")
+
+    @classmethod
+    def execute(cls):
+        pass
+
 
 class Factory:
     @classmethod
-    def resolve(cls, opcode: str, numOfArgs: int, valueList: list, typeList: list) -> Instruction:
+    def resolve(cls, opcode: str, num_of_args: int, value_list: list, type_list: list) -> Instruction:
         if opcode.upper() == 'MOVE':
-            return MOVE(numOfArgs, valueList, typeList)
+            return MOVE(num_of_args, value_list, type_list)
         elif opcode.upper() == 'CREATEFRAME':
-            return CREATEFRAME(value, t)
+            return CREATEFRAME(num_of_args, value_list, type_list)
         elif opcode.upper() == 'PUSHFRAME':
-            return PUSHFRAME(value, t)
+            return PUSHFRAME(num_of_args, value_list, type_list)
         elif opcode.upper() == 'POPFRAME':
-            return POPFRAME(value, t)
+            return POPFRAME(num_of_args, value_list, type_list)
         elif opcode.upper() == 'DEFVAR':
-            return DEFVAR(value, t)
+            return DEFVAR(num_of_args, value_list, type_list)
         elif opcode.upper() == 'CALL':
-            return CALL(value, t)
+            return CALL(num_of_args, value_list, type_list)
         elif opcode.upper() == 'RETURN':
-            return RETURN(value, t)
+            return RETURN(num_of_args, value_list, type_list)
 
         elif opcode.upper() == 'PUSHS':
-            return PUSHS(value, t)
+            return PUSHS(num_of_args, value_list, type_list)
         elif opcode.upper() == 'POPS':
-            return POPS(value, t)
+            return POPS(num_of_args, value_list, type_list)
 
         elif opcode.upper() == 'ADD':
-            return ADD(value, t)
+            return ADD(num_of_args, value_list, type_list)
         elif opcode.upper() == 'SUB':
-            return SUB(value, t)
+            return SUB(num_of_args, value_list, type_list)
         elif opcode.upper() == 'MUL':
-            return MUL(value, t)
+            return MUL(num_of_args, value_list, type_list)
         elif opcode.upper() == 'IDIV':
-            return IDIV(value, t)
+            return IDIV(num_of_args, value_list, type_list)
         elif opcode.upper() == 'LT':
-            return LT(value, t)
+            return LT(num_of_args, value_list, type_list)
         elif opcode.upper() == 'GT':
-            return GT(value, t)
+            return GT(num_of_args, value_list, type_list)
         elif opcode.upper() == 'EQ':
-            return EQ(value, t)
+            return EQ(num_of_args, value_list, type_list)
         elif opcode.upper() == 'AND':
-            return AND(value, t)
+            return AND(num_of_args, value_list, type_list)
         elif opcode.upper() == 'OR':
-            return OR(value, t)
+            return OR(num_of_args, value_list, type_list)
         elif opcode.upper() == 'NOT':
-            return NOT(value, t)
+            return NOT(num_of_args, value_list, type_list)
         elif opcode.upper() == 'INT2CHAR':
-            return INT2CHAR(value, t)
+            return INT2CHAR(num_of_args, value_list, type_list)
         elif opcode.upper() == 'STRI2INT':
-            return STRI2INT(value, t)
+            return STRI2INT(num_of_args, value_list, type_list)
 
         elif opcode.upper() == 'READ':
-            return READ(value, t)
+            return READ(num_of_args, value_list, type_list)
         elif opcode.upper() == 'WRITE':
-            return WRITE(value, t)
+            return WRITE(num_of_args, value_list, type_list)
 
         elif opcode.upper() == 'CONCAT':
-            return CONCAT(value, t)
+            return CONCAT(num_of_args, value_list, type_list)
         elif opcode.upper() == 'STRLEN':
-            return STRLEN(value, t)
+            return STRLEN(num_of_args, value_list, type_list)
         elif opcode.upper() == 'GETCHAR':
-            return GETCHAR(value, t)
+            return GETCHAR(num_of_args, value_list, type_list)
         elif opcode.upper() == 'SETCHAR':
-            return SETCHAR(value, t)
+            return SETCHAR(num_of_args, value_list, type_list)
 
         elif opcode.upper() == 'TYPE':
-            return TYPE(value, t)
+            return TYPE(num_of_args, value_list, type_list)
         elif opcode.upper() == 'LABEL':
-            return LABEL(value, t)
+            return LABEL(num_of_args, value_list, type_list)
         elif opcode.upper() == 'JUMP':
-            return JUMP(value, t)
+            return JUMP(num_of_args, value_list, type_list)
         elif opcode.upper() == 'JUMPIFEQ':
-            return JUMPIFEQ(value, t)
+            return JUMPIFEQ(num_of_args, value_list, type_list)
         elif opcode.upper() == 'JUMPIFNEQ':
-            return JUMPIFNEQ(value, t)
+            return JUMPIFNEQ(num_of_args, value_list, type_list)
         elif opcode.upper() == 'EXIT':
-            return EXIT(value, t)
+            return EXIT(num_of_args, value_list, type_list)
 
         elif opcode.upper() == 'DPRINT':
-            return DPRINT(value, t)
+            return DPRINT(num_of_args, value_list, type_list)
         elif opcode.upper() == 'BREAK':
-            return BREAK(value, t)
+            return BREAK(num_of_args, value_list, type_list)
         else:
             sys.stderr.write('ERROR: unknown instruction\n')
             exit(52)
