@@ -7,8 +7,7 @@ import fileinput
 import argparse
 import sys
 import textwrap
-import xml.etree.ElementTree as ET
-
+import xml.etree.ElementTree as Tree
 
 class Counter:
     def __init__(self):
@@ -24,25 +23,15 @@ class Counter:
         self._Count = 0
 
 
-### Class definition
-#   every instuction has atributes opcode to define opcode, number of instructions, argument types,
-#   arguments (class Argument) and it appends itself to instruction list which is shared among all Instructions
 class Instruction:
     _InstructionList = []
 
-    def __init__(self, opcode, arg1: None, arg2: None, arg3: None):
+    def __init__(self, opcode, arg1 = None, arg2 = None, arg3 = None):
         self._Opcode = opcode
-        self._NumOfArgs = arg_num
-        self._Type = t
-        self._Arg = []
+        self._arg1 = arg1
+        self._arg2 = arg2
+        self._arg3 = arg3
         self._InstructionList.append(self)
-
-        if self._NumOfArgs < 0 or self._NumOfArgs > 3:
-            sys.stderr.write("ERROR: Instruction init(): wrong number of arguments\n")
-            exit(52)
-
-        for number in range(self._NumOfArgs):
-            self._Arg.append(Argument(self._Type[number], arg[number]))
 
     def get_opcode(self):
         return self._Opcode
@@ -50,36 +39,39 @@ class Instruction:
     def get_list(self):
         return self._InstructionList
 
-    def get_arg_num(self):
-        return self._NumOfArgs
-
     def get_arg(self, arg_num):
-        if 3 < arg_num < 0:
-            exit(99)
+        if arg_num == 1:
+            return self._arg1
         else:
-            return self._Arg[arg_num]
+            return self._arg2 if (arg_num == 2) else self._arg3
 
 
-#   every Argument of every instruction has defined type
-#   if argument is variable
-##      defined: frame, name
-##      may be defined: value + var_type
-#   other arguments
-##      defined: value
 class Argument:
-
-    def __init__(self, ):
-        self._VarType = ""
-        self._Type = t
+    # GF/LF/TF@var_name, int/string/bool/nil/type/label => value
+    _Types = {
+        'int'  : int,
+        'str'  : str,
+        'bool' : bool,
+        'type' : type,
+        'nil'  : 'nil',
+        'label': 'label',
+        'var'  : 'var'
+    }
+    def __init__(self, arg_type: str, arg_value: str):
+        self._VarType = None
+        self._Type = self._Types[arg_type]
         self._Frame = None
         self._Name: str
         self._Value: str
 
         if self._Type == "var":
-            self._Frame = string.split('@')[0]
-            self._Name = string.split('@')[1]
-        else:
-            self._Value = string
+            self._Frame = arg_value.split('@')[0]
+            self._Name = arg_value.split('@')[1]
+        elif self._Type in (int, str, bool, type):
+            try:
+                self._Value = self._Type(arg_value)
+            except ValueError:
+                exit(53)
 
     def get_type(self):
         return self._Type
@@ -88,19 +80,19 @@ class Argument:
         try:
             return self._Value
         except AttributeError:
-            sys.stderr.write("ERROR: Argument get_value(): empty variable\n")
+            sys.stderr.write("ERROR: Argument get_value(): Empty value\n")
             exit(56)
 
     def set_value(self, value):
         if self._Type == "var":
             if value is None:
-                self._VarType = "string"
+                self._VarType = str
                 self._Value = ""
             elif value == "True" or value == "False":
                 self._Value = bool(value)
-                self._VarType = "bool"
+                self._VarType = bool
             elif value.isnumeric():
-                self._VarType = "int"
+                self._VarType = int
                 self._Value = int(value)
             elif value == "nil":
                 self._VarType = "nil"
@@ -121,10 +113,12 @@ class Argument:
     def get_name(self):
         try:
             return self._Name
+        # TODO: mby change from sys err to: return None ???
         except AttributeError:
             sys.stderr.write("ERROR: Argument get_name(): argument is not variable\n")
             exit(53)
 
+    # TODO: no idea what this is
     def set_frame(self, frame):
         if self.get_frame() == "LF" and frame == "TF":
             self._Frame = frame
@@ -135,16 +129,12 @@ class Argument:
             exit(57)
 
     def is_variable(self):
-        if self.get_frame():
-            return True
-        return False
+        return True if self._Type == 'var' else False
 
     def get_var_type(self):
-        if self.is_variable():
-            return self._VarType
-        sys.stderr.write("ERROR: get_var_type(): argument is not a variable\n")
-        exit(99)
+        return self._VarType
 
+    # TODO: dont think this is necessary
     def has_value(self):
         try:
             return self._Value
@@ -305,31 +295,308 @@ class Frame:
 #################################
 #################################
 # TODO: check - order, opcode, arg_num, arg_type, arg_value is from arg_type, arg_value OK for instruction
+# TODO: check - correct type??
 class MOVE(Instruction):
-    def __init__(self, arg_num, arg, t):
-        super().__init__("MOVE", arg_num, arg, t)
+    def __init__(self, arg_num, args, types):
+        if arg_num != 2:
+            sys.stderr.write("ERROR: Instruction MOVE got " + arg_num + "arguments, 2 arguments expected")
+            exit(52)
+
+        arg1 = Argument(types[0], args[0])
+        arg2 = Argument(types[1], args[1])
+        super().__init__("MOVE", arg1, arg2)
+
+        @classmethod
+        def execute(cls, arg1: Argument, arg2: Argument):
+            pass
+
 class CREATEFRAME(Instruction):
+    def __init__(self, arg_num, args, types):
+        if arg_num != 0:
+            sys.stderr.write("ERROR: Instruction CREATEFRAME got " + arg_num + "arguments, 0 arguments expected")
+            exit(52)
+
+        super().__init__("CREATEFRAME")
+
+        @classmethod
+        def execute(cls):
+            pass
+
 class PUSHFRAME(Instruction):
+    def __init__(self, arg_num, args, types):
+        if arg_num != 0:
+            sys.stderr.write("ERROR: Instruction PUSHFRAME got " + arg_num + "arguments, 0 arguments expected")
+            exit(52)
+
+        super().__init__("PUSHFRAME")
+
+        @classmethod
+        def execute(cls):
+            pass
+
 class POPFRAME(Instruction):
+    def __init__(self, arg_num, args, types):
+        if arg_num != 0:
+            sys.stderr.write("ERROR: Instruction POPFRAME got " + arg_num + "arguments, 0 arguments expected")
+            exit(52)
+
+        super().__init__("POPFRAME")
+
+        @classmethod
+        def execute(cls):
+            pass
 class DEFVAR(Instruction):
+    def __init__(self, arg_num, args, types):
+        if arg_num != 1:
+            sys.stderr.write("ERROR: Instruction DEFVAR got " + arg_num + "arguments, 1 argument expected")
+            exit(52)
+
+        arg1 = Argument(types[0], args[0])
+        super().__init__("DEFVAR", arg1)
+
+        @classmethod
+        def execute(cls, arg1: Argument):
+            pass
 class CALL(Instruction):
+    def __init__(self, arg_num, args, types):
+        if arg_num != 1:
+            sys.stderr.write("ERROR: Instruction CALL got " + arg_num + "arguments, 1 argument expected")
+            exit(52)
+
+        arg1 = Argument(types[0], args[0])
+        super().__init__("CALL", arg1)
+
+        @classmethod
+        def execute(cls, arg1: Argument):
+            pass
+
 class RETURN(Instruction):
+    def __init__(self, arg_num, args, types):
+        if arg_num != 0:
+            sys.stderr.write("ERROR: Instruction RETURN got " + arg_num + "arguments, 0 arguments expected")
+            exit(52)
+
+        super().__init__("RETURN")
+
+        @classmethod
+        def execute(cls):
+            pass
 class PUSHS(Instruction):
+    def __init__(self, arg_num, args, types):
+        if arg_num != 1:
+            sys.stderr.write("ERROR: Instruction PUSHS got " + arg_num + "arguments, 1 argument expected")
+            exit(52)
+
+        arg1 = Argument(types[0], args[0])
+        super().__init__("PUSHS", arg1)
+
+        @classmethod
+        def execute(cls, arg1: Argument):
+            pass
+
 class POPS(Instruction):
+    def __init__(self, arg_num, args, types):
+        if arg_num != 1:
+            sys.stderr.write("ERROR: Instruction POPS got " + arg_num + "arguments, 1 argument expected")
+            exit(52)
+
+        arg1 = Argument(types[0], args[0])
+        super().__init__("POPS", arg1)
+
+        @classmethod
+        def execute(cls, arg1: Argument):
+            pass
 class ADD(Instruction):
+    def __init__(self, arg_num, args, types):
+        if arg_num != 3:
+            sys.stderr.write("ERROR: Instruction ADD got " + arg_num + "arguments, 3 arguments expected")
+            exit(52)
+
+        arg1 = Argument(types[0], args[0])
+        arg2 = Argument(types[1], args[1])
+        arg3 = Argument(types[2], args[2])
+        super().__init__("ADD", arg1, arg2, arg3)
+
+        @classmethod
+        def execute(cls, arg1: Argument, arg2: Argument, arg3: Argument):
+            pass
 class SUB(Instruction):
+    def __init__(self, arg_num, args, types):
+        if arg_num != 3:
+            sys.stderr.write("ERROR: Instruction SUB got " + arg_num + "arguments, 3 arguments expected")
+            exit(52)
+
+        arg1 = Argument(types[0], args[0])
+        arg2 = Argument(types[1], args[1])
+        arg3 = Argument(types[2], args[2])
+        super().__init__("SUB", arg1, arg2, arg3)
+
+        @classmethod
+        def execute(cls, arg1: Argument, arg2: Argument, arg3: Argument):
+            pass
 class MUL(Instruction):
+    def __init__(self, arg_num, args, types):
+        if arg_num != 3:
+            sys.stderr.write("ERROR: Instruction MUL got " + arg_num + "arguments, 3 arguments expected")
+            exit(52)
+
+        arg1 = Argument(types[0], args[0])
+        arg2 = Argument(types[1], args[1])
+        arg3 = Argument(types[2], args[2])
+        super().__init__("MUL", arg1, arg2, arg3)
+
+        @classmethod
+        def execute(cls, arg1: Argument, arg2: Argument, arg3: Argument):
+            pass
 class IDIV(Instruction):
+    def __init__(self, arg_num, args, types):
+        if arg_num != 3:
+            sys.stderr.write("ERROR: Instruction IDIV got " + arg_num + "arguments, 3 arguments expected")
+            exit(52)
+
+        arg1 = Argument(types[0], args[0])
+        arg2 = Argument(types[1], args[1])
+        arg3 = Argument(types[2], args[2])
+        super().__init__("IDIV", arg1, arg2, arg3)
+
+        @classmethod
+        def execute(cls, arg1: Argument, arg2: Argument, arg3: Argument):
+            pass
 class LT(Instruction):
+    def __init__(self, arg_num, args, types):
+        if arg_num != 3:
+            sys.stderr.write("ERROR: Instruction LT got " + arg_num + "arguments, 3 arguments expected")
+            exit(52)
+
+        arg1 = Argument(types[0], args[0])
+        arg2 = Argument(types[1], args[1])
+        arg3 = Argument(types[2], args[2])
+        super().__init__("LT", arg1, arg2, arg3)
+
+        @classmethod
+        def execute(cls, arg1: Argument, arg2: Argument, arg3: Argument):
+            pass
 class GT(Instruction):
+    def __init__(self, arg_num, args, types):
+        if arg_num != 3:
+            sys.stderr.write("ERROR: Instruction GT got " + arg_num + "arguments, 3 arguments expected")
+            exit(52)
+
+        arg1 = Argument(types[0], args[0])
+        arg2 = Argument(types[1], args[1])
+        arg3 = Argument(types[2], args[2])
+        super().__init__("GT", arg1, arg2, arg3)
+
+        @classmethod
+        def execute(cls, arg1: Argument, arg2: Argument, arg3: Argument):
+            pass
 class EQ(Instruction):
+    def __init__(self, arg_num, args, types):
+        if arg_num != 3:
+            sys.stderr.write("ERROR: Instruction EQ got " + arg_num + "arguments, 3 arguments expected")
+            exit(52)
+
+        arg1 = Argument(types[0], args[0])
+        arg2 = Argument(types[1], args[1])
+        arg3 = Argument(types[2], args[2])
+        super().__init__("EQ", arg1, arg2, arg3)
+
+        @classmethod
+        def execute(cls, arg1: Argument, arg2: Argument, arg3: Argument):
+            pass
 class AND(Instruction):
+    def __init__(self, arg_num, args, types):
+        if arg_num != 3:
+            sys.stderr.write("ERROR: Instruction AND got " + arg_num + "arguments, 3 arguments expected")
+            exit(52)
+
+        arg1 = Argument(types[0], args[0])
+        arg2 = Argument(types[1], args[1])
+        arg3 = Argument(types[2], args[2])
+        super().__init__("AND", arg1, arg2, arg3)
+
+        @classmethod
+        def execute(cls, arg1: Argument, arg2: Argument, arg3: Argument):
+            pass
 class OR(Instruction):
+    def __init__(self, arg_num, args, types):
+        if arg_num != 3:
+            sys.stderr.write("ERROR: Instruction OR got " + arg_num + "arguments, 3 arguments expected")
+            exit(52)
+
+        arg1 = Argument(types[0], args[0])
+        arg2 = Argument(types[1], args[1])
+        arg3 = Argument(types[2], args[2])
+        super().__init__("OR", arg1, arg2, arg3)
+
+        @classmethod
+        def execute(cls, arg1: Argument, arg2: Argument, arg3: Argument):
+            pass
 class NOT(Instruction):
+    def __init__(self, arg_num, args, types):
+        if arg_num != 2:
+            sys.stderr.write("ERROR: Instruction NOT got " + arg_num + "arguments, 2 arguments expected")
+            exit(52)
+
+        arg1 = Argument(types[0], args[0])
+        arg2 = Argument(types[1], args[1])
+        super().__init__("NOT", arg1, arg2)
+
+        @classmethod
+        def execute(cls, arg1: Argument, arg2: Argument):
+            pass
 class INT2CHAR(Instruction):
+    def __init__(self, arg_num, args, types):
+        if arg_num != 2:
+            sys.stderr.write("ERROR: Instruction INT2CHAR got " + arg_num + "arguments, 2 arguments expected")
+            exit(52)
+
+        arg1 = Argument(types[0], args[0])
+        arg2 = Argument(types[1], args[1])
+        super().__init__("INT2CHAR", arg1, arg2)
+
+        @classmethod
+        def execute(cls, arg1: Argument, arg2: Argument):
+            pass
 class STRI2INT(Instruction):
+    def __init__(self, arg_num, args, types):
+        if arg_num != 3:
+            sys.stderr.write("ERROR: Instruction STRI2INT got " + arg_num + "arguments, 3 arguments expected")
+            exit(52)
+
+        arg1 = Argument(types[0], args[0])
+        arg2 = Argument(types[1], args[1])
+        arg3 = Argument(types[2], args[2])
+        super().__init__("STRI2INT", arg1, arg2, arg3)
+
+        @classmethod
+        def execute(cls, arg1: Argument, arg2: Argument, arg3: Argument):
+            pass
 class READ(Instruction):
+    def __init__(self, arg_num, args, types):
+        if arg_num != 2:
+            sys.stderr.write("ERROR: Instruction READ got " + arg_num + "arguments, 2 arguments expected")
+            exit(52)
+
+        arg1 = Argument(types[0], args[0])
+        arg2 = Argument(types[1], args[1])
+        super().__init__("READ", arg1, arg2)
+
+        @classmethod
+        def execute(cls, arg1: Argument, arg2: Argument):
+            pass
 class WRITE(Instruction):
+    def __init__(self, arg_num, args, types):
+        if arg_num != 1:
+            sys.stderr.write("ERROR: Instruction WRITE got " + arg_num + "arguments, 1 argument expected")
+            exit(52)
+
+        arg1 = Argument(types[0], args[0])
+        super().__init__("WRITE", arg1)
+
+        @classmethod
+        def execute(cls, arg1: Argument):
+            pass
 class CONCAT(Instruction):
 class STRLEN(Instruction):
 class GETCHAR(Instruction):
@@ -345,9 +612,9 @@ class BREAK(Instruction):
 
 class Factory:
     @classmethod
-    def resolve(cls, opcode: str, arg_num, value, t):
+    def resolve(cls, opcode: str, numOfArgs: int, valueList: list, typeList: list) -> Instruction:
         if opcode.upper() == 'MOVE':
-            return MOVE(value, )
+            return MOVE(numOfArgs, valueList, typeList)
         elif opcode.upper() == 'CREATEFRAME':
             return CREATEFRAME(value, t)
         elif opcode.upper() == 'PUSHFRAME':
@@ -430,7 +697,7 @@ class Factory:
 ### ERROR
 ##  py ERROR
 #   31 - XML file is not well-formed
-#   32 - unexpected XML structure   (dup)
+#   32 - unexpected XML structure   (dupes)
 
 #   2  - most argparse errors
 
@@ -441,12 +708,12 @@ class Factory:
 #   99      - internal error
 
 ##  Interpreter ERROR
-#   52      - semantic ERROR in input   (unknown instruction)
+#   52      - semantic ERROR in input   (unknown instruction, undef label or var redef)
 #   53      - wrong operand types
-#   54      - non-existing variable access
+#   54      - non-existing variable access (within existing frame)
 #   55      - non-existing frame
 #   56      - missing value
-#   57      - wrong operand value   (div by 0)
+#   57      - wrong operand value (div by 0)
 #   58      - wrong string operation
 
 
@@ -471,7 +738,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     ### Check availability of source and input files
-    root: ET.Element
+    root: Tree.Element
     InputFile: str
     #   No file
     if args.source is None and args.input is None:
@@ -484,7 +751,7 @@ if __name__ == '__main__':
         with fileinput.input('-') as f:
             for line in f:
                 SourceString += line
-        root = ET.fromstring(SourceString)
+        root = Tree.fromstring(SourceString)
 
         with open(args.input.name, encoding=args.input.encoding) as In:
             InputFile = In.read()
@@ -493,7 +760,7 @@ if __name__ == '__main__':
     elif args.input is None:
         # noinspection PyUnresolvedReferences
         with open(args.source.name, encoding=args.source.encoding) as SourceFile:
-            tree = ET.parse(SourceFile)
+            tree = Tree.parse(SourceFile)
             root = tree.getroot()
 
         InputFile = ""
@@ -504,7 +771,7 @@ if __name__ == '__main__':
     #   Both files
     else:
         with open(args.source.name, encoding=args.source.encoding) as SourceFile:
-            tree = ET.parse(SourceFile)
+            tree = Tree.parse(SourceFile)
             root = tree.getroot()
 
         with open(args.input.name, encoding=args.input.encoding) as In:
