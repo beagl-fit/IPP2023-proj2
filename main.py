@@ -14,6 +14,7 @@ class Counter:
     """
     Object serves as a program counter. Current value is stored in the `_Count` variable.
     """
+
     def __init__(self) -> None:
         self._Count = 0
 
@@ -35,6 +36,7 @@ class Counter:
         Method which resets current count back to 0
         """
         self._Count = 0
+
 
 class Argument:
     """
@@ -180,13 +182,15 @@ class Instruction:
             return self._arg2 if (arg_num == 2) else self._arg3
 
 
-
 #   class for 3 stacks - label, data and call
 ##  label stack (functions LABEL, JUMP,...)
 ##  data stack (functions PUSHS, POPS)
 ##  call stack (functions CALL, RETURN)
 ### has methods pop, push and pop_all
 class Stack:
+    """
+
+    """
     _LabelStack = []
     _DataStack = []
     _CallStack = []
@@ -940,20 +944,20 @@ class Factory:
             exit(52)
 
 
-### ERROR
-##  py ERROR
+# ______ERRORS______
+#  py ERROR
 #   31 - XML file is not well-formed
 #   32 - unexpected XML structure   (dupes)
 
 #   2  - most argparse errors
 
-##  project ERROR
+#  project ERROR
 #   10      - missing parameter
 #   11      - error when opening input files    - argparse errno 13
 #   12      - error when opening output files
 #   99      - internal error
 
-##  Interpreter ERROR
+#  Interpreter ERROR
 #   52      - semantic ERROR in input   (unknown instruction, undef label or var redef)
 #   53      - wrong operand types
 #   54      - non-existing variable access (within existing frame)
@@ -983,7 +987,7 @@ if __name__ == '__main__':
                         help='input of XML instructions (e.g. READ)')
     args = parser.parse_args()
 
-    ### Check availability of source and input files
+    # Check availability of source and input files
     root: Tree.Element
     InputFile: str
     #   No file
@@ -1034,10 +1038,10 @@ if __name__ == '__main__':
     for element in Input:
         Stack().push(element, 'input')
 
-    ######  Sort Instructions
-    ##   https://devdreamz.com/question/931441-python-sort-xml-elements-by-and-tag-and-attributes-recursively
+    # Sort instructions, non-author code from:
+    #    https://devdreamz.com/question/931441-python-sort-xml-elements-by-and-tag-and-attributes-recursively
     root[:] = sorted(root, key=lambda child: (child.tag, int(child.get('order'))))
-    ##
+    # slightly altered continuation of code from the same site
 
     for instr in root:
         attrib = instr.attrib
@@ -1046,7 +1050,7 @@ if __name__ == '__main__':
             attrib.clear()
             # noinspection PyTypeChecker
             attrib.update(attribs)
-    ######
+    # end of non-author code
 
     orderStack = []
 
@@ -1082,4 +1086,4 @@ if __name__ == '__main__':
             instr.execute(instr.get_arg(0), instr.get_arg(1), instr.get_arg(2))
             c.increment_count()
             # TODO: remove prints
-            print(instr.get_opcode(), ':', instr.get_arg(1), instr.get_arg(2), instr.get_arg(3))
+            # print(instr.get_opcode(), ':', instr.get_arg(1), instr.get_arg(2), instr.get_arg(3))
