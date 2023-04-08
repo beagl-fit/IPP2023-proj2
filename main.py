@@ -53,21 +53,38 @@ class Argument:
         'var': 'var'
     }
 
+    # TODO: label
     def __init__(self, arg_type: str, arg_value: str):
         self._VarType = None
         self._Type = self._Types[arg_type]
         self._Frame = None
-        self._Name: str
-        self._Value: str
+        self._Name = None
+        self._Value = None
 
         if self._Type == "var":
             self._Frame = arg_value.split('@')[0]
             self._Name = arg_value.split('@')[1]
-        elif self._Type in (int, str, bool, type):
+        elif self._Type in (int, str):
             try:
                 self._Value = self._Type(arg_value)
             except ValueError:
                 exit(53)
+        elif self._Type == "nil":
+            self._Value = 'nil'
+        elif self._Type == bool:
+            if arg_value == 'True':
+                self._Value = True
+            elif arg_value == 'False':
+                self._Value = False
+            else:
+                exit(666)
+            # TODO: fix errcode for bool
+        elif self._Type == type:
+            if arg_value in ('int', 'string', 'bool'):
+                self._Value = self._Types[arg_value]
+            else:
+                exit(666)
+            # TODO: fix errcode for type
 
     def get_type(self):
         return self._Type
@@ -87,14 +104,14 @@ class Argument:
             elif value == "True" or value == "False":
                 self._Value = bool(value)
                 self._VarType = bool
-            elif value.isnumeric():
+            elif type(value) == int:
                 self._VarType = int
                 self._Value = int(value)
             elif value == "nil":
                 self._VarType = "nil"
-                self._Value = value
+                self._Value = "nil"
             else:
-                self._VarType = "string"
+                self._VarType = str
                 self._Value = value
         else:
             sys.stderr.write("ERROR: Argument set_value(): setting value to non-variable argument\n")
@@ -276,6 +293,7 @@ class Stack:
 ##  methods return_frame, push_frame, add_var_to_frame, get_var, pop_frame, is_in_frame, clear_temp_frame
 class Frame:
     # TODO: docstrings
+    # TODO: local + temp frame init to None
     _GlobalFrame = []
     _FrameStack = []
     _TemporaryFrame = []
@@ -302,7 +320,7 @@ class Frame:
         self._TemporaryFrame.clear()
 
     # adds variable to chosen frame
-    def add_var_to_frame(self, var: Argument, frame):
+    def add_var_to_frame(self, var: Argument, frame: str):
         if frame == "GF":
             self._GlobalFrame.append(var)
         elif frame == "TF":
@@ -352,12 +370,9 @@ class Frame:
     def clear_temp_frame(self):
         self._TemporaryFrame.clear()
 
-
-#################################
-#################################
-#################################
 # TODO: check - arg_value is from arg_type, arg_value OK for instruction
 # TODO: check - correct type??
+# TODO: string ab\032cd => ab cd (write)
 
 class MOVE(Instruction):
     """
@@ -390,7 +405,7 @@ class MOVE(Instruction):
         :param arg3: None
         """
         real = Frame().get_var(arg1.get_name(), arg1.get_frame())
-        if arg2.is_variable() == 'var':
+        if arg2.is_variable():
             arg2 = Frame().get_var(arg2.get_name(), arg2.get_frame())
 
         real.set_value(arg2.get_value())
@@ -406,7 +421,7 @@ class CREATEFRAME(Instruction):
 
     @classmethod
     def execute(cls, arg1: Argument, arg2: Argument, arg3: Argument):
-        pass
+        Frame().clear_temp_frame()
 
 
 class PUSHFRAME(Instruction):
@@ -725,11 +740,25 @@ class WRITE(Instruction):
             exit(52)
 
         arg1 = Argument(types[0], arguments[0])
+
+        if not arg1.is_symbol():
+            sys.stderr.write("ERROR: Instruction WRITE: argument 1 is not a symbol")
+            exit(53)
+
         super().__init__("WRITE", arg1)
 
     @classmethod
     def execute(cls, arg1: Argument, arg2: Argument, arg3: Argument):
-        pass
+        if arg1.is_variable():
+            arg1 = Frame().get_var(arg1.get_name(), arg1.get_frame())
+
+        val = arg1.get_value()
+        if arg1.get_type() == 'nil' or arg1.get_var_type() == 'nil':
+            val = ''
+
+        if arg1.get_type() == str or arg1.get_var_type() == str:
+            pass
+        print(val, end='')
 
 
 class CONCAT(Instruction):
@@ -1043,7 +1072,7 @@ if __name__ == '__main__':
     InputFile: str
     #   No file
     if args.source is None and args.input is None:
-        sys.stderr.write('at least one of --source and --input required\n')  # parser.error()    <- error 2
+        sys.stderr.write('at least one of --source and --input required')  # parser.error()    <- error 2
         exit(10)
 
     #   Only input file
@@ -1080,7 +1109,7 @@ if __name__ == '__main__':
 
     # noinspection PyUnboundLocalVariable
     if root.tag != 'program':
-        sys.stderr.write('ERROR: No "program" root of XML\n')
+        sys.stderr.write('ERROR: No "program" root of XML')
         exit(31)
 
     # noinspection PyUnboundLocalVariable
@@ -1097,6 +1126,7 @@ if __name__ == '__main__':
     for instr in root:
         attrib = instr.attrib
         if len(attrib) > 1:
+            instr[:] = sorted(instr, key=lambda child: (child.tag, child.get('desc')))
             attribs = sorted(attrib.items())
             attrib.clear()
             # noinspection PyTypeChecker
