@@ -14,7 +14,6 @@ class Counter:
     """
     Object serves as a program counter. Current value is stored in the `_Count` variable.
     """
-
     def __init__(self) -> None:
         self._Count = 0
 
@@ -39,6 +38,7 @@ class Counter:
 
 
 class Argument:
+    # TODO: docstrings
     """
     some text
     """
@@ -130,12 +130,15 @@ class Argument:
     def get_var_type(self):
         return self._VarType
 
-    # TODO: dont think this is necessary
+    # TODO: don't think this is necessary
     def has_value(self):
         try:
             return self._Value
         except AttributeError:
             return False
+
+    def is_symbol(self):
+        return True if self.is_variable() or self._Type in (int, str, bool, 'nil') else False
 
 
 class Instruction:
@@ -182,61 +185,72 @@ class Instruction:
             return self._arg2 if (arg_num == 2) else self._arg3
 
 
-#   class for 3 stacks - label, data and call
-##  label stack (functions LABEL, JUMP,...)
-##  data stack (functions PUSHS, POPS)
-##  call stack (functions CALL, RETURN)
-### has methods pop, push and pop_all
 class Stack:
     """
-
+    Stack is a class containing 3 different stack. Stacks are implemented as lists and are needed for correct
+    function of different IPPcode23 instructions.
+    :var _LabelStack: LABEL, JUMP(s)
+    :var _DataStack: PUSHS, POPS
+    :var _CallStack: CALL, RETURN
     """
-    _LabelStack = []
+    _LabelStack = []    # _LabelStack = [[LABEL,NUMBER],[LABEL2,NUMBER2],...]
     _DataStack = []
     _CallStack = []
 
-    # pushes value to stack
-    def push(self, val, stack):
-        if stack == "label":
+    def push(self, val, stack: str) -> None:
+        """
+        Method adds a value to a stack specified by the `stack` param.
+        :param val: value to be added
+        :param stack: L | D | C
+        """
+        if stack == "L":    # stack().push([arg1.getvalue(), c.get_count()]
             for num in range(len(self._LabelStack)):
                 if val[0] in self._LabelStack[num][0]:
                     sys.stderr.write("ERROR: Stack push(): label already exists\n")
                     exit(52)
             self._LabelStack.append(val)
-        elif stack == "data":
+        elif stack == "D":
             self._DataStack.append(val)
-        elif stack == "call":
+        elif stack == "C":
             self._CallStack.append(val)
         else:
             sys.stderr.write("ERROR: Stack push(): unknown 'stack'\n")
             exit(99)
 
-    # pops value from stack
-    def pop(self, stack):
-        if stack == "call":
+    def pop(self, stack: str):
+        """
+        Method pop returns and removes the last value from a stack specified by the `stack` param. Labels from
+        label stack can't be popped. May result in error if it is called on an empty call stack.
+        :param stack: D | C
+        :return: last value on stack
+        """
+        if stack == "C":
             if len(self._CallStack):
                 return self._CallStack.pop()
-        elif stack == "data":
+            sys.stderr.write("ERROR: Stack pop(): empty 'stack'\n")
+            exit(56)
+        elif stack == "D":
             if len(self._DataStack):
                 return self._DataStack.pop()
             return "nil"
         else:
             sys.stderr.write("ERROR: Stack pop(): unknown 'stack'\n")
             exit(99)
-        sys.stderr.write("ERROR: Stack pop(): empty 'stack'\n")
-        exit(56)
 
-    # returns all variables present in stack
-    def pop_all(self, stack):
+    def ret_all(self, stack: str) -> str:
+        """
+        Ret_all method returns all everything on a stack specified by the stack param
+        :param stack: L | D
+        :return: stack elements
+        """
+        # TODO: change return to a [list]
         ret = ""
-        if stack == "label":
-            length = len(self._LabelStack)
-            for ln in range(length):
+        if stack == "L":
+            for ln in range(len(self._LabelStack)):
                 ret += self._LabelStack[ln]
                 ret += " "
-        elif stack == "data":
-            length = len(self._DataStack)
-            for ln in range(length):
+        elif stack == "D":
+            for ln in range(len(self._DataStack)):
                 ret += self._DataStack[ln]
                 ret += " "
         else:
@@ -244,9 +258,13 @@ class Stack:
             exit(99)
         return ret
 
-    # _LabelStack = [[LABEL,NUMBER],[LABEL2,NUMBER2],...]
-    # returns NUMBER that will be set as global COUNT to execute next instruction
-    def jump(self, name):
+    def jump(self, name: str) -> int:
+        """
+        Method jump returns a number that will be used by the program counter to execute correct
+        instruction after a JUMP instruction.
+        :param name: name of the label program jumps to
+        :return: number for counter
+        """
         for num in range(len(self._LabelStack)):
             if name in self._LabelStack[num][0]:
                 return self._LabelStack[num][1]
@@ -257,6 +275,7 @@ class Stack:
 #   class to keep global, local and temporary frame, to know where variables are defined
 ##  methods return_frame, push_frame, add_var_to_frame, get_var, pop_frame, is_in_frame, clear_temp_frame
 class Frame:
+    # TODO: docstrings
     _GlobalFrame = []
     _FrameStack = []
     _TemporaryFrame = []
@@ -293,7 +312,7 @@ class Frame:
             exit(55)
 
     # returns variable if variable with chosen name and frame exists
-    def get_var(self, name, frame):
+    def get_var(self, name: str, frame: str):
         if frame == "GF":
             for var in self._GlobalFrame:
                 if var.get_name() == name:
@@ -341,23 +360,46 @@ class Frame:
 # TODO: check - correct type??
 
 class MOVE(Instruction):
-    def __init__(self, arg_num, arguments, types):
+    """
+    Instruction MOVE from IPPcode23 requires 2 arguments of type variable and symbol
+    """
+    def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 2:
-            sys.stderr.write("ERROR: Instruction MOVE got " + arg_num + "arguments, 2 arguments expected")
+            sys.stderr.write("ERROR: Instruction MOVE got " + str(arg_num) + " arguments, 2 arguments expected")
             exit(52)
 
         arg1 = Argument(types[0], arguments[0])
         arg2 = Argument(types[1], arguments[1])
+
+        if not arg1.is_variable():
+            sys.stderr.write("ERROR: Instruction MOVE: argument 1 is not a variable")
+            exit(53)
+
+        if not arg2.is_symbol():
+            sys.stderr.write("ERROR: Instruction MOVE: argument 2 is not a symbol")
+            exit(53)
+
         super().__init__("MOVE", arg1, arg2)
 
+    @classmethod
     def execute(cls, arg1: Argument, arg2: Argument, arg3: Argument):
-        pass
+        """
+        Set value of arg1 to value of arg2.
+        :param arg1: var
+        :param arg2: symb
+        :param arg3: None
+        """
+        real = Frame().get_var(arg1.get_name(), arg1.get_frame())
+        if arg2.is_variable() == 'var':
+            arg2 = Frame().get_var(arg2.get_name(), arg2.get_frame())
+
+        real.set_value(arg2.get_value())
 
 
 class CREATEFRAME(Instruction):
-    def __init__(self, arg_num, arguments, types):
+    def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 0:
-            sys.stderr.write("ERROR: Instruction CREATEFRAME got " + arg_num + "arguments, 0 arguments expected")
+            sys.stderr.write("ERROR: Instruction CREATEFRAME got " + str(arg_num) + " arguments, 0 arguments expected")
             exit(52)
 
         super().__init__("CREATEFRAME")
@@ -368,9 +410,9 @@ class CREATEFRAME(Instruction):
 
 
 class PUSHFRAME(Instruction):
-    def __init__(self, arg_num, arguments, types):
+    def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 0:
-            sys.stderr.write("ERROR: Instruction PUSHFRAME got " + arg_num + "arguments, 0 arguments expected")
+            sys.stderr.write("ERROR: Instruction PUSHFRAME got " + str(arg_num) + " arguments, 0 arguments expected")
             exit(52)
 
         super().__init__("PUSHFRAME")
@@ -381,9 +423,9 @@ class PUSHFRAME(Instruction):
 
 
 class POPFRAME(Instruction):
-    def __init__(self, arg_num, arguments, types):
+    def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 0:
-            sys.stderr.write("ERROR: Instruction POPFRAME got " + arg_num + "arguments, 0 arguments expected")
+            sys.stderr.write("ERROR: Instruction POPFRAME got " + str(arg_num) + " arguments, 0 arguments expected")
             exit(52)
 
         super().__init__("POPFRAME")
@@ -394,23 +436,32 @@ class POPFRAME(Instruction):
 
 
 class DEFVAR(Instruction):
-    def __init__(self, arg_num, arguments, types):
+    def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 1:
-            sys.stderr.write("ERROR: Instruction DEFVAR got " + arg_num + "arguments, 1 argument expected")
+            sys.stderr.write("ERROR: Instruction DEFVAR got " + str(arg_num) + " arguments, 1 argument expected")
             exit(52)
 
         arg1 = Argument(types[0], arguments[0])
+
+        if not arg1.is_variable():
+            sys.stderr.write("ERROR: Instruction DEFVAR: argument 1 is not a variable")
+            exit(53)
+
         super().__init__("DEFVAR", arg1)
 
     @classmethod
     def execute(cls, arg1: Argument, arg2: Argument, arg3: Argument):
+        if Frame().is_in_frame(arg1.get_name(), arg1.get_frame()):
+            sys.stderr.write("ERROR: execute DEFVAR: variable already in frame\n")
+            exit(52)
+        Frame().add_var_to_frame(arg1, arg1.get_frame())
         pass
 
 
 class CALL(Instruction):
-    def __init__(self, arg_num, arguments, types):
+    def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 1:
-            sys.stderr.write("ERROR: Instruction CALL got " + arg_num + "arguments, 1 argument expected")
+            sys.stderr.write("ERROR: Instruction CALL got " + str(arg_num) + " arguments, 1 argument expected")
             exit(52)
 
         arg1 = Argument(types[0], arguments[0])
@@ -422,9 +473,9 @@ class CALL(Instruction):
 
 
 class RETURN(Instruction):
-    def __init__(self, arg_num, arguments, types):
+    def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 0:
-            sys.stderr.write("ERROR: Instruction RETURN got " + arg_num + "arguments, 0 arguments expected")
+            sys.stderr.write("ERROR: Instruction RETURN got " + str(arg_num) + " arguments, 0 arguments expected")
             exit(52)
 
         super().__init__("RETURN")
@@ -435,9 +486,9 @@ class RETURN(Instruction):
 
 
 class PUSHS(Instruction):
-    def __init__(self, arg_num, arguments, types):
+    def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 1:
-            sys.stderr.write("ERROR: Instruction PUSHS got " + arg_num + "arguments, 1 argument expected")
+            sys.stderr.write("ERROR: Instruction PUSHS got " + str(arg_num) + " arguments, 1 argument expected")
             exit(52)
 
         arg1 = Argument(types[0], arguments[0])
@@ -449,9 +500,9 @@ class PUSHS(Instruction):
 
 
 class POPS(Instruction):
-    def __init__(self, arg_num, arguments, types):
+    def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 1:
-            sys.stderr.write("ERROR: Instruction POPS got " + arg_num + "arguments, 1 argument expected")
+            sys.stderr.write("ERROR: Instruction POPS got " + str(arg_num) + " arguments, 1 argument expected")
             exit(52)
 
         arg1 = Argument(types[0], arguments[0])
@@ -463,9 +514,9 @@ class POPS(Instruction):
 
 
 class ADD(Instruction):
-    def __init__(self, arg_num, arguments, types):
+    def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 3:
-            sys.stderr.write("ERROR: Instruction ADD got " + arg_num + "arguments, 3 arguments expected")
+            sys.stderr.write("ERROR: Instruction ADD got " + str(arg_num) + " arguments, 3 arguments expected")
             exit(52)
 
         arg1 = Argument(types[0], arguments[0])
@@ -479,9 +530,9 @@ class ADD(Instruction):
 
 
 class SUB(Instruction):
-    def __init__(self, arg_num, arguments, types):
+    def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 3:
-            sys.stderr.write("ERROR: Instruction SUB got " + arg_num + "arguments, 3 arguments expected")
+            sys.stderr.write("ERROR: Instruction SUB got " + str(arg_num) + " arguments, 3 arguments expected")
             exit(52)
 
         arg1 = Argument(types[0], arguments[0])
@@ -495,9 +546,9 @@ class SUB(Instruction):
 
 
 class MUL(Instruction):
-    def __init__(self, arg_num, arguments, types):
+    def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 3:
-            sys.stderr.write("ERROR: Instruction MUL got " + arg_num + "arguments, 3 arguments expected")
+            sys.stderr.write("ERROR: Instruction MUL got " + str(arg_num) + " arguments, 3 arguments expected")
             exit(52)
 
         arg1 = Argument(types[0], arguments[0])
@@ -511,9 +562,9 @@ class MUL(Instruction):
 
 
 class IDIV(Instruction):
-    def __init__(self, arg_num, arguments, types):
+    def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 3:
-            sys.stderr.write("ERROR: Instruction IDIV got " + arg_num + "arguments, 3 arguments expected")
+            sys.stderr.write("ERROR: Instruction IDIV got " + str(arg_num) + " arguments, 3 arguments expected")
             exit(52)
 
         arg1 = Argument(types[0], arguments[0])
@@ -527,9 +578,9 @@ class IDIV(Instruction):
 
 
 class LT(Instruction):
-    def __init__(self, arg_num, arguments, types):
+    def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 3:
-            sys.stderr.write("ERROR: Instruction LT got " + arg_num + "arguments, 3 arguments expected")
+            sys.stderr.write("ERROR: Instruction LT got " + str(arg_num) + " arguments, 3 arguments expected")
             exit(52)
 
         arg1 = Argument(types[0], arguments[0])
@@ -543,9 +594,9 @@ class LT(Instruction):
 
 
 class GT(Instruction):
-    def __init__(self, arg_num, arguments, types):
+    def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 3:
-            sys.stderr.write("ERROR: Instruction GT got " + arg_num + "arguments, 3 arguments expected")
+            sys.stderr.write("ERROR: Instruction GT got " + str(arg_num) + " arguments, 3 arguments expected")
             exit(52)
 
         arg1 = Argument(types[0], arguments[0])
@@ -559,9 +610,9 @@ class GT(Instruction):
 
 
 class EQ(Instruction):
-    def __init__(self, arg_num, arguments, types):
+    def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 3:
-            sys.stderr.write("ERROR: Instruction EQ got " + arg_num + "arguments, 3 arguments expected")
+            sys.stderr.write("ERROR: Instruction EQ got " + str(arg_num) + " arguments, 3 arguments expected")
             exit(52)
 
         arg1 = Argument(types[0], arguments[0])
@@ -575,9 +626,9 @@ class EQ(Instruction):
 
 
 class AND(Instruction):
-    def __init__(self, arg_num, arguments, types):
+    def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 3:
-            sys.stderr.write("ERROR: Instruction AND got " + arg_num + "arguments, 3 arguments expected")
+            sys.stderr.write("ERROR: Instruction AND got " + str(arg_num) + " arguments, 3 arguments expected")
             exit(52)
 
         arg1 = Argument(types[0], arguments[0])
@@ -591,9 +642,9 @@ class AND(Instruction):
 
 
 class OR(Instruction):
-    def __init__(self, arg_num, arguments, types):
+    def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 3:
-            sys.stderr.write("ERROR: Instruction OR got " + arg_num + "arguments, 3 arguments expected")
+            sys.stderr.write("ERROR: Instruction OR got " + str(arg_num) + " arguments, 3 arguments expected")
             exit(52)
 
         arg1 = Argument(types[0], arguments[0])
@@ -607,9 +658,9 @@ class OR(Instruction):
 
 
 class NOT(Instruction):
-    def __init__(self, arg_num, arguments, types):
+    def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 2:
-            sys.stderr.write("ERROR: Instruction NOT got " + arg_num + "arguments, 2 arguments expected")
+            sys.stderr.write("ERROR: Instruction NOT got " + str(arg_num) + " arguments, 2 arguments expected")
             exit(52)
 
         arg1 = Argument(types[0], arguments[0])
@@ -622,9 +673,9 @@ class NOT(Instruction):
 
 
 class INT2CHAR(Instruction):
-    def __init__(self, arg_num, arguments, types):
+    def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 2:
-            sys.stderr.write("ERROR: Instruction INT2CHAR got " + arg_num + "arguments, 2 arguments expected")
+            sys.stderr.write("ERROR: Instruction INT2CHAR got " + str(arg_num) + " arguments, 2 arguments expected")
             exit(52)
 
         arg1 = Argument(types[0], arguments[0])
@@ -637,9 +688,9 @@ class INT2CHAR(Instruction):
 
 
 class STRI2INT(Instruction):
-    def __init__(self, arg_num, arguments, types):
+    def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 3:
-            sys.stderr.write("ERROR: Instruction STRI2INT got " + arg_num + "arguments, 3 arguments expected")
+            sys.stderr.write("ERROR: Instruction STRI2INT got " + str(arg_num) + " arguments, 3 arguments expected")
             exit(52)
 
         arg1 = Argument(types[0], arguments[0])
@@ -653,9 +704,9 @@ class STRI2INT(Instruction):
 
 
 class READ(Instruction):
-    def __init__(self, arg_num, arguments, types):
+    def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 2:
-            sys.stderr.write("ERROR: Instruction READ got " + arg_num + "arguments, 2 arguments expected")
+            sys.stderr.write("ERROR: Instruction READ got " + str(arg_num) + " arguments, 2 arguments expected")
             exit(52)
 
         arg1 = Argument(types[0], arguments[0])
@@ -668,9 +719,9 @@ class READ(Instruction):
 
 
 class WRITE(Instruction):
-    def __init__(self, arg_num, arguments, types):
+    def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 1:
-            sys.stderr.write("ERROR: Instruction WRITE got " + arg_num + "arguments, 1 argument expected")
+            sys.stderr.write("ERROR: Instruction WRITE got " + str(arg_num) + " arguments, 1 argument expected")
             exit(52)
 
         arg1 = Argument(types[0], arguments[0])
@@ -682,9 +733,9 @@ class WRITE(Instruction):
 
 
 class CONCAT(Instruction):
-    def __init__(self, arg_num, arguments, types):
+    def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 3:
-            sys.stderr.write("ERROR: Instruction CONCAT got " + arg_num + "arguments, 3 arguments expected")
+            sys.stderr.write("ERROR: Instruction CONCAT got " + str(arg_num) + " arguments, 3 arguments expected")
             exit(52)
 
         arg1 = Argument(types[0], arguments[0])
@@ -698,9 +749,9 @@ class CONCAT(Instruction):
 
 
 class STRLEN(Instruction):
-    def __init__(self, arg_num, arguments, types):
+    def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 2:
-            sys.stderr.write("ERROR: Instruction STRLEN got " + arg_num + "arguments, 2 arguments expected")
+            sys.stderr.write("ERROR: Instruction STRLEN got " + str(arg_num) + " arguments, 2 arguments expected")
             exit(52)
 
         arg1 = Argument(types[0], arguments[0])
@@ -713,9 +764,9 @@ class STRLEN(Instruction):
 
 
 class GETCHAR(Instruction):
-    def __init__(self, arg_num, arguments, types):
+    def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 3:
-            sys.stderr.write("ERROR: Instruction GETCHAR got " + arg_num + "arguments, 3 arguments expected")
+            sys.stderr.write("ERROR: Instruction GETCHAR got " + str(arg_num) + " arguments, 3 arguments expected")
             exit(52)
 
         arg1 = Argument(types[0], arguments[0])
@@ -729,9 +780,9 @@ class GETCHAR(Instruction):
 
 
 class SETCHAR(Instruction):
-    def __init__(self, arg_num, arguments, types):
+    def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 3:
-            sys.stderr.write("ERROR: Instruction SETCHAR got " + arg_num + "arguments, 3 arguments expected")
+            sys.stderr.write("ERROR: Instruction SETCHAR got " + str(arg_num) + " arguments, 3 arguments expected")
             exit(52)
 
         arg1 = Argument(types[0], arguments[0])
@@ -745,9 +796,9 @@ class SETCHAR(Instruction):
 
 
 class TYPE(Instruction):
-    def __init__(self, arg_num, arguments, types):
+    def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 2:
-            sys.stderr.write("ERROR: Instruction TYPE got " + arg_num + "arguments, 2 arguments expected")
+            sys.stderr.write("ERROR: Instruction TYPE got " + str(arg_num) + " arguments, 2 arguments expected")
             exit(52)
 
         arg1 = Argument(types[0], arguments[0])
@@ -760,9 +811,9 @@ class TYPE(Instruction):
 
 
 class LABEL(Instruction):
-    def __init__(self, arg_num, arguments, types):
+    def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 1:
-            sys.stderr.write("ERROR: Instruction LABEL got " + arg_num + "arguments, 1 argument expected")
+            sys.stderr.write("ERROR: Instruction LABEL got " + str(arg_num) + " arguments, 1 argument expected")
             exit(52)
 
         arg1 = Argument(types[0], arguments[0])
@@ -774,9 +825,9 @@ class LABEL(Instruction):
 
 
 class JUMP(Instruction):
-    def __init__(self, arg_num, arguments, types):
+    def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 1:
-            sys.stderr.write("ERROR: Instruction JUMP got " + arg_num + "arguments, 1 argument expected")
+            sys.stderr.write("ERROR: Instruction JUMP got " + str(arg_num) + " arguments, 1 argument expected")
             exit(52)
 
         arg1 = Argument(types[0], arguments[0])
@@ -788,9 +839,9 @@ class JUMP(Instruction):
 
 
 class JUMPIFEQ(Instruction):
-    def __init__(self, arg_num, arguments, types):
+    def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 3:
-            sys.stderr.write("ERROR: Instruction JUMPIFEQ got " + arg_num + "arguments, 3 arguments expected")
+            sys.stderr.write("ERROR: Instruction JUMPIFEQ got " + str(arg_num) + " arguments, 3 arguments expected")
             exit(52)
 
         arg1 = Argument(types[0], arguments[0])
@@ -804,9 +855,9 @@ class JUMPIFEQ(Instruction):
 
 
 class JUMPIFNEQ(Instruction):
-    def __init__(self, arg_num, arguments, types):
+    def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 3:
-            sys.stderr.write("ERROR: Instruction JUMPIFNEQ got " + arg_num + "arguments, 3 arguments expected")
+            sys.stderr.write("ERROR: Instruction JUMPIFNEQ got " + str(arg_num) + " arguments, 3 arguments expected")
             exit(52)
 
         arg1 = Argument(types[0], arguments[0])
@@ -820,9 +871,9 @@ class JUMPIFNEQ(Instruction):
 
 
 class EXIT(Instruction):
-    def __init__(self, arg_num, arguments, types):
+    def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 1:
-            sys.stderr.write("ERROR: Instruction EXIT got " + arg_num + "arguments, 1 argument expected")
+            sys.stderr.write("ERROR: Instruction EXIT got " + str(arg_num) + " arguments, 1 argument expected")
             exit(52)
 
         arg1 = Argument(types[0], arguments[0])
@@ -834,9 +885,9 @@ class EXIT(Instruction):
 
 
 class DPRINT(Instruction):
-    def __init__(self, arg_num, arguments, types):
+    def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 1:
-            sys.stderr.write("ERROR: Instruction DPRINT got " + arg_num + "arguments, 1 argument expected")
+            sys.stderr.write("ERROR: Instruction DPRINT got " + str(arg_num) + " arguments, 1 argument expected")
             exit(52)
 
         arg1 = Argument(types[0], arguments[0])
@@ -848,9 +899,9 @@ class DPRINT(Instruction):
 
 
 class BREAK(Instruction):
-    def __init__(self, arg_num, arguments, types):
+    def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 0:
-            sys.stderr.write("ERROR: Instruction BREAK got " + arg_num + "arguments, 0 arguments expected")
+            sys.stderr.write("ERROR: Instruction BREAK got " + str(arg_num) + " arguments, 0 arguments expected")
             exit(52)
 
         super().__init__("BREAK")
@@ -976,7 +1027,7 @@ if __name__ == '__main__':
     c = Counter()
     #   Parsing arguments
     parser = argparse.ArgumentParser(
-        description='Python interpreter of IPPcode22',
+        description='Python interpreter of IPPcode23',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=textwrap.dedent('''\
         Either '--source' or '--input' argument required
@@ -1083,7 +1134,8 @@ if __name__ == '__main__':
         InstrList = i.get_list()
         while c.get_count() < instrCount:
             instr = InstrList[c.get_count()]
-            instr.execute(instr.get_arg(0), instr.get_arg(1), instr.get_arg(2))
+            instr.execute(instr.get_arg(1), instr.get_arg(2), instr.get_arg(3))
             c.increment_count()
             # TODO: remove prints
             # print(instr.get_opcode(), ':', instr.get_arg(1), instr.get_arg(2), instr.get_arg(3))
+        # print(c.get_count())
