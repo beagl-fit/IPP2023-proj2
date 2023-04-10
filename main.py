@@ -70,12 +70,18 @@ class Argument:
         if self._Type == "var":
             self._Frame = arg_value.split('@')[0]
             self._Name = arg_value.split('@')[1]
-        elif self._Type in (int, str):
+        elif self._Type == int:
             try:
-                self._Value = self._Type(arg_value)
+                self._Value = int(arg_value)
             except ValueError:
-                sys.stderr.write('ERROR: Argument init: wrong int or string argument value')
+                sys.stderr.write('ERROR: Argument init: wrong int argument value')
                 exit(53)
+        elif self._Type == str:
+            if arg_value is None:
+                self._Value = ''
+            # TODO: change this
+            else:
+                self._Value = arg_value
         elif self._Type == "nil":
             self._Value = 'nil'
         elif self._Type == bool:
@@ -111,8 +117,8 @@ class Argument:
             if value is None:
                 self._VarType = str
                 self._Value = ""
-            elif value == "True" or value == "False":
-                self._Value = bool(value)
+            elif type(value) is bool:
+                self._Value = value
                 self._VarType = bool
             elif type(value) == int:
                 self._VarType = int
@@ -275,19 +281,35 @@ class Stack:
         :param stack: L | D
         :return: stack elements
         """
-        # TODO: change return to a [list]
-        ret = ""
+        # TODO: do DATA stack
+        ret = ''
         if stack == "L":
-            for ln in range(len(self._LabelStack)):
-                ret += self._LabelStack[ln]
-                ret += " "
+            if len(self._LabelStack):
+                ret += 'name:count:: '
+                for label in self._LabelStack:
+                    ret += label[0]
+                    ret += ':'
+                    ret += str(label[1])
+                    ret += '; '
+            else:
+                ret = 'EMPTY; '
         elif stack == "D":
-            for ln in range(len(self._DataStack)):
-                ret += self._DataStack[ln]
-                ret += " "
+            if len(self._DataStack):
+                for label in self._DataStack:
+                    ret += label[0]
+                    ret += ':'
+                    ret += str(label[1])
+                    ret += '; '
+            else:
+                ret = 'EMPTY;'
         else:
-            sys.stderr.write("ERROR: Stack pop_all(): unknown 'stack'\n")
-            exit(99)
+            if len(self._CallStack):
+                ret += 'B->T:: '
+                for label in self._CallStack:
+                    ret += str(label)
+                    ret += '; '
+            else:
+                ret = 'EMPTY;'
         return ret
 
     def jump(self, name: str) -> int:
@@ -647,7 +669,7 @@ class POPS(Instruction):
 
 class ADD(Instruction):
     """
-    Instruction ADD from IPPcode23 requires 3 argument of type variable, int and int.
+    Instruction ADD from IPPcode23 requires 3 arguments of type variable, int and int.
     """
     def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 3:
@@ -662,7 +684,7 @@ class ADD(Instruction):
             sys.stderr.write("ERROR: Instruction ADD: argument 1 is not a variable")
             exit(53)
         if not arg2.get_type() in ('var', int) or not arg3.get_type() in ('var', int):
-            sys.stderr.write("ERROR: Instruction ADD: argument 2 or 3 is not a variable or int")
+            sys.stderr.write("ERROR: Instruction ADD: argument 2 or 3 is not a variable or an int")
             exit(53)
 
         super().__init__("ADD", arg1, arg2, arg3)
@@ -694,7 +716,7 @@ class ADD(Instruction):
 
 class SUB(Instruction):
     """
-    Instruction SUB from IPPcode23 requires 3 argument of type variable, int and int.
+    Instruction SUB from IPPcode23 requires 3 arguments of type variable, int and int.
     """
     def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 3:
@@ -709,7 +731,7 @@ class SUB(Instruction):
             sys.stderr.write("ERROR: Instruction SUB: argument 1 is not a variable")
             exit(53)
         if not arg2.get_type() in ('var', int) or not arg3.get_type() in ('var', int):
-            sys.stderr.write("ERROR: Instruction SUB: argument 2 or 3 is not a variable or int")
+            sys.stderr.write("ERROR: Instruction SUB: argument 2 or 3 is not a variable or an int")
             exit(53)
 
         super().__init__("SUB", arg1, arg2, arg3)
@@ -741,7 +763,7 @@ class SUB(Instruction):
 
 class MUL(Instruction):
     """
-    Instruction MUL from IPPcode23 requires 3 argument of type variable, int and int.
+    Instruction MUL from IPPcode23 requires 3 arguments of type variable, int and int.
     """
     def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 3:
@@ -756,7 +778,7 @@ class MUL(Instruction):
             sys.stderr.write("ERROR: Instruction MUL: argument 1 is not a variable")
             exit(53)
         if not arg2.get_type() in ('var', int) or not arg3.get_type() in ('var', int):
-            sys.stderr.write("ERROR: Instruction MUL: argument 2 or 3 is not a variable or int")
+            sys.stderr.write("ERROR: Instruction MUL: argument 2 or 3 is not a variable or an int")
             exit(53)
 
         super().__init__("MUL", arg1, arg2, arg3)
@@ -788,7 +810,7 @@ class MUL(Instruction):
 
 class IDIV(Instruction):
     """
-    Instruction IDIV from IPPcode23 requires 3 argument of type variable, int and int.
+    Instruction IDIV from IPPcode23 requires 3 arguments of type variable, int and int.
     """
     def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 3:
@@ -803,7 +825,7 @@ class IDIV(Instruction):
             sys.stderr.write("ERROR: Instruction IDIV: argument 1 is not a variable")
             exit(53)
         if not arg2.get_type() in ('var', int) or not arg3.get_type() in ('var', int):
-            sys.stderr.write("ERROR: Instruction IDIV: argument 2 or 3 is not a variable or int")
+            sys.stderr.write("ERROR: Instruction IDIV: argument 2 or 3 is not a variable or an int")
             exit(53)
 
         super().__init__("IDIV", arg1, arg2, arg3)
@@ -840,7 +862,7 @@ class IDIV(Instruction):
 
 class LT(Instruction):
     """
-    Instruction LT from IPPcode23 requires 3 argument of type variable, symbol and symbol.
+    Instruction LT from IPPcode23 requires 3 arguments of type variable, symbol and symbol.
     """
     def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 3:
@@ -884,7 +906,7 @@ class LT(Instruction):
             arg3 = f.get_var(arg3.get_name(), arg3.get_frame())
             type2 = arg3.get_var_type()
             if type2 not in (int, str, bool):
-                sys.stderr.write("ERROR: Instruction LT: wrong type of argument 2")
+                sys.stderr.write("ERROR: Instruction LT: wrong type of argument 3")
                 exit(53)
 
         if type2 == 'nil' or type1 == 'nil':
@@ -900,7 +922,7 @@ class LT(Instruction):
 
 class GT(Instruction):
     """
-    Instruction GT from IPPcode23 requires 3 argument of type variable, symbol and symbol.
+    Instruction GT from IPPcode23 requires 3 arguments of type variable, symbol and symbol.
     """
     def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 3:
@@ -960,7 +982,7 @@ class GT(Instruction):
 
 class EQ(Instruction):
     """
-    Instruction GT from IPPcode23 requires 3 argument of type variable, symbol and symbol.
+    Instruction GT from IPPcode23 requires 3 arguments of type variable, symbol and symbol.
     """
     def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 3:
@@ -1005,7 +1027,7 @@ class EQ(Instruction):
             arg3 = f.get_var(arg3.get_name(), arg3.get_frame())
             type2 = arg3.get_var_type()
             if type2 not in (int, str, bool, 'nil'):
-                sys.stderr.write("ERROR: Instruction EQ: wrong type of argument 2")
+                sys.stderr.write("ERROR: Instruction EQ: wrong type of argument 3")
                 exit(53)
 
         if type1 != type2 and type1 != 'nil' and type2 != 'nil':
@@ -1023,7 +1045,7 @@ class EQ(Instruction):
 
 class AND(Instruction):
     """
-    Instruction AND from IPPcode23 requires 3 argument of type variable, bool and bool.
+    Instruction AND from IPPcode23 requires 3 arguments of type variable, bool and bool.
     """
     def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 3:
@@ -1038,7 +1060,7 @@ class AND(Instruction):
             sys.stderr.write("ERROR: Instruction AND: argument 1 is not a variable")
             exit(53)
         if not arg2.get_type() in ('var', bool) or not arg3.get_type() in ('var', bool):
-            sys.stderr.write("ERROR: Instruction AND: argument 2 or 3 is not a variable or bool")
+            sys.stderr.write("ERROR: Instruction AND: argument 2 or 3 is not a variable or a bool")
             exit(53)
 
         super().__init__("AND", arg1, arg2, arg3)
@@ -1070,7 +1092,7 @@ class AND(Instruction):
 
 class OR(Instruction):
     """
-    Instruction OR from IPPcode23 requires 3 argument of type variable, bool and bool.
+    Instruction OR from IPPcode23 requires 3 arguments of type variable, bool and bool.
     """
     def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 3:
@@ -1085,7 +1107,7 @@ class OR(Instruction):
             sys.stderr.write("ERROR: Instruction OR: argument 1 is not a variable")
             exit(53)
         if not arg2.get_type() in ('var', bool) or not arg3.get_type() in ('var', bool):
-            sys.stderr.write("ERROR: Instruction OR: argument 2 or 3 is not a variable or bool")
+            sys.stderr.write("ERROR: Instruction OR: argument 2 or 3 is not a variable or a bool")
             exit(53)
 
         super().__init__("OR", arg1, arg2, arg3)
@@ -1117,7 +1139,7 @@ class OR(Instruction):
 
 class NOT(Instruction):
     """
-    Instruction NOT from IPPcode23 requires 2 argument of type variable and bool.
+    Instruction NOT from IPPcode23 requires 2 arguments of type variable and bool.
     """
     def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 2:
@@ -1131,7 +1153,7 @@ class NOT(Instruction):
             sys.stderr.write("ERROR: Instruction NOT: argument 1 is not a variable")
             exit(53)
         if not arg2.get_type() in ('var', bool):
-            sys.stderr.write("ERROR: Instruction NOT: argument 2 is not a variable or bool")
+            sys.stderr.write("ERROR: Instruction NOT: argument 2 is not a variable or a bool")
             exit(53)
 
         super().__init__("NOT", arg1, arg2)
@@ -1156,6 +1178,9 @@ class NOT(Instruction):
 
 
 class INT2CHAR(Instruction):
+    """
+    Instruction INT2CHAR from IPPcode23 requires 2 arguments of type variable and int.
+    """
     def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 2:
             sys.stderr.write("ERROR: Instruction INT2CHAR got " + str(arg_num) + " arguments, 2 arguments expected")
@@ -1163,14 +1188,43 @@ class INT2CHAR(Instruction):
 
         arg1 = Argument(types[0], arguments[0])
         arg2 = Argument(types[1], arguments[1])
+
+        if not arg1.is_variable():
+            sys.stderr.write("ERROR: Instruction INT2CHAR: argument 1 is not a variable")
+            exit(53)
+        if not arg2.get_type() in ('var', int):
+            sys.stderr.write("ERROR: Instruction INT2CHAR: argument 2 is not a variable or an int")
+            exit(53)
+
         super().__init__("INT2CHAR", arg1, arg2)
 
     @classmethod
     def execute(cls, arg1: Argument | None, arg2: Argument | None, arg3: Argument | None) -> None:
-        pass
+        """
+        Transforms value of arg2 to a char and saves said value to arg1.
+        :param arg1: var
+        :param arg2: int
+        :param arg3: None
+        """
+        arg1 = f.get_var(arg1.get_name(), arg1.get_frame())
+
+        if arg2.is_variable():
+            arg2 = f.get_var(arg2.get_name(), arg2.get_frame())
+            if arg2.get_var_type() != int:
+                sys.stderr.write("ERROR: Instruction INT2CHAR: argument 2 is not an int")
+                exit(53)
+
+        try:
+            arg1.set_value(chr(arg2.get_value()))
+        except ValueError:
+            sys.stderr.write("ERROR: Instruction INT2CHAR: invalid value or arg2")
+            exit(58)
 
 
 class STRI2INT(Instruction):
+    """
+    Instruction STRI2INT from IPPcode23 requires 3 arguments of type variable, string and int.
+    """
     def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 3:
             sys.stderr.write("ERROR: Instruction STRI2INT got " + str(arg_num) + " arguments, 3 arguments expected")
@@ -1179,14 +1233,59 @@ class STRI2INT(Instruction):
         arg1 = Argument(types[0], arguments[0])
         arg2 = Argument(types[1], arguments[1])
         arg3 = Argument(types[2], arguments[2])
+
+        if not arg1.is_variable():
+            sys.stderr.write("ERROR: Instruction INT2CHAR: argument 1 is not a variable")
+            exit(53)
+        if not arg2.get_type() in ('var', str):
+            sys.stderr.write("ERROR: Instruction INT2CHAR: argument 2 is not a variable or a string")
+            exit(53)
+        if not arg3.get_type() in ('var', int):
+            sys.stderr.write("ERROR: Instruction INT2CHAR: argument 3 is not a variable or an int")
+            exit(53)
+
         super().__init__("STRI2INT", arg1, arg2, arg3)
 
     @classmethod
     def execute(cls, arg1: Argument | None, arg2: Argument | None, arg3: Argument | None) -> None:
-        pass
+        """
+        Transforms character from string in arg2 on position arg3 and save said character to arg1
+        :param arg1: var
+        :param arg2: string
+        :param arg3: int
+        """
+        arg1 = f.get_var(arg1.get_name(), arg1.get_frame())
+
+        if arg2.is_variable():
+            arg2 = f.get_var(arg2.get_name(), arg2.get_frame())
+            if arg2.get_var_type() != str:
+                sys.stderr.write("ERROR: Instruction STRI2INT: argument 2 is not a string")
+                exit(53)
+
+        if arg3.is_variable():
+            arg3 = f.get_var(arg3.get_name(), arg3.get_frame())
+            if arg3.get_var_type() != int:
+                sys.stderr.write("ERROR: Instruction STRI2INT: argument 3 is not an int")
+                exit(53)
+
+        try:
+            transform = list(arg2.get_value())
+            index = arg3.get_value()
+
+            if not 0 <= index < len(transform):
+                sys.stderr.write("ERROR: Instruction STRI2INT: arg3 outside of range of arg2")
+                exit(58)
+            arg1.set_value(ord(transform[index]))
+
+        except ValueError:
+            sys.stderr.write("ERROR: Instruction STRI2INT: invalid value to transform in arg2")
+            exit(58)
 
 
 class READ(Instruction):
+    """
+    Instruction READ from IPPcode23 requires 2 arguments of type variable and type.
+    """
     def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 2:
             sys.stderr.write("ERROR: Instruction READ got " + str(arg_num) + " arguments, 2 arguments expected")
@@ -1194,10 +1293,25 @@ class READ(Instruction):
 
         arg1 = Argument(types[0], arguments[0])
         arg2 = Argument(types[1], arguments[1])
+
+        if not arg1.is_variable():
+            sys.stderr.write("ERROR: Instruction READ: argument 1 is not a variable")
+            exit(53)
+        if not arg2.get_type() in ('var', type):
+            sys.stderr.write("ERROR: Instruction READ: argument 2 is not a variable or a type")
+            exit(53)
+
         super().__init__("READ", arg1, arg2)
 
     @classmethod
     def execute(cls, arg1: Argument | None, arg2: Argument | None, arg3: Argument | None) -> None:
+        """
+        Reads a value from stdin, converts it to type arg2 and saves said value to arg1.
+        In case of an invalid or empty an input saves value nil of type nil.
+        :param arg1: var
+        :param arg2: type
+        :param arg3: None
+        """
         pass
 
 
@@ -1236,6 +1350,9 @@ class WRITE(Instruction):
 
 
 class CONCAT(Instruction):
+    """
+    Instruction CONCAT from IPPcode23 requires 3 arguments of type variable, string and string.
+    """
     def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 3:
             sys.stderr.write("ERROR: Instruction CONCAT got " + str(arg_num) + " arguments, 3 arguments expected")
@@ -1244,14 +1361,45 @@ class CONCAT(Instruction):
         arg1 = Argument(types[0], arguments[0])
         arg2 = Argument(types[1], arguments[1])
         arg3 = Argument(types[2], arguments[2])
+
+        if not arg1.is_variable():
+            sys.stderr.write("ERROR: Instruction CONCAT: argument 1 is not a variable")
+            exit(53)
+        if not arg2.get_type() in ('var', str) or not arg3.get_type() in ('var', str):
+            sys.stderr.write("ERROR: Instruction CONCAT: argument 2 or 3 is not a variable or a string")
+            exit(53)
+
         super().__init__("CONCAT", arg1, arg2, arg3)
 
     @classmethod
     def execute(cls, arg1: Argument | None, arg2: Argument | None, arg3: Argument | None) -> None:
-        pass
+        """
+        Saves the concatenation of arg2 and arg3 to a variable specified by arg1.
+        :param arg1: var
+        :param arg2: string
+        :param arg3: string
+        """
+        arg1 = f.get_var(arg1.get_name(), arg1.get_frame())
+
+        if arg2.is_variable():
+            arg2 = f.get_var(arg2.get_name(), arg2.get_frame())
+            if arg2.get_var_type() != str:
+                sys.stderr.write("ERROR: Instruction CONCAT: argument 2 is not a string")
+                exit(53)
+
+        if arg3.is_variable():
+            arg3 = f.get_var(arg3.get_name(), arg3.get_frame())
+            if arg3.get_var_type() != str:
+                sys.stderr.write("ERROR: Instruction CONCAT: argument 3 is not a string")
+                exit(53)
+
+        arg1.set_value(arg2.get_value() + arg3.get_value())
 
 
 class STRLEN(Instruction):
+    """
+    Instruction STRLEN from IPPcode23 requires 2 arguments of type variable, string.
+    """
     def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 2:
             sys.stderr.write("ERROR: Instruction STRLEN got " + str(arg_num) + " arguments, 2 arguments expected")
@@ -1259,14 +1407,39 @@ class STRLEN(Instruction):
 
         arg1 = Argument(types[0], arguments[0])
         arg2 = Argument(types[1], arguments[1])
-        super().__init__("STRLEN", arg1, arg2)
+
+        if not arg1.is_variable():
+            sys.stderr.write("ERROR: Instruction STRLEN: argument 1 is not a variable")
+            exit(53)
+        if not arg2.get_type() in ('var', str):
+            sys.stderr.write("ERROR: Instruction STRLEN: argument 2 is not a variable or a string")
+            exit(53)
+
+        super().__init__("CONCAT", arg1, arg2)
 
     @classmethod
     def execute(cls, arg1: Argument | None, arg2: Argument | None, arg3: Argument | None) -> None:
-        pass
+        """
+        Saves the lenght of arg2 to a variable specified by arg1.
+        :param arg1: var
+        :param arg2: string
+        :param arg3: None
+        """
+        arg1 = f.get_var(arg1.get_name(), arg1.get_frame())
+
+        if arg2.is_variable():
+            arg2 = f.get_var(arg2.get_name(), arg2.get_frame())
+            if arg2.get_var_type() != str:
+                sys.stderr.write("ERROR: Instruction CONCAT: argument 2 is not a string")
+                exit(53)
+
+        arg1.set_value(len(arg2.get_value()))
 
 
 class GETCHAR(Instruction):
+    """
+    Instruction GETCHAR from IPPcode23 requires 3 arguments of type variable, string and int.
+    """
     def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 3:
             sys.stderr.write("ERROR: Instruction GETCHAR got " + str(arg_num) + " arguments, 3 arguments expected")
@@ -1275,14 +1448,51 @@ class GETCHAR(Instruction):
         arg1 = Argument(types[0], arguments[0])
         arg2 = Argument(types[1], arguments[1])
         arg3 = Argument(types[2], arguments[2])
+
+        if not arg1.is_variable():
+            sys.stderr.write("ERROR: Instruction GETCHAR: argument 1 is not a variable")
+            exit(53)
+        if not arg2.get_type() in ('var', str):
+            sys.stderr.write("ERROR: Instruction GETCHAR: argument 2 is not a variable or a string")
+            exit(53)
+        if not arg3.get_type() in ('var', int):
+            sys.stderr.write("ERROR: Instruction GETCHAR: argument 3 is not a variable or a int")
+            exit(53)
+
         super().__init__("GETCHAR", arg1, arg2, arg3)
 
     @classmethod
     def execute(cls, arg1: Argument | None, arg2: Argument | None, arg3: Argument | None) -> None:
-        pass
+        """
+        Saves character on position arg3 from string arg2 to a variable arg1.
+        :param arg1: var
+        :param arg2: string
+        :param arg3: int
+        """
+        arg1 = f.get_var(arg1.get_name(), arg1.get_frame())
+
+        if arg2.is_variable():
+            arg2 = f.get_var(arg2.get_name(), arg2.get_frame())
+            if arg2.get_var_type() != str:
+                sys.stderr.write("ERROR: Instruction GETCHAR: argument 2 is not a string")
+                exit(53)
+
+        if arg3.is_variable():
+            arg3 = f.get_var(arg3.get_name(), arg3.get_frame())
+            if arg3.get_var_type() != int:
+                sys.stderr.write("ERROR: Instruction GETCHAR: argument 3 is not an int")
+                exit(53)
+        try:
+            arg1.set_value(arg2.get_value()[arg3.get_value()])
+        except IndexError:
+            sys.stderr.write("ERROR: Instruction GETCHAR: index outside of string")
+            exit(58)
 
 
 class SETCHAR(Instruction):
+    """
+    Instruction SETCHAR from IPPcode23 requires 3 arguments of type variable, int and string.
+    """
     def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 3:
             sys.stderr.write("ERROR: Instruction SETCHAR got " + str(arg_num) + " arguments, 3 arguments expected")
@@ -1291,14 +1501,56 @@ class SETCHAR(Instruction):
         arg1 = Argument(types[0], arguments[0])
         arg2 = Argument(types[1], arguments[1])
         arg3 = Argument(types[2], arguments[2])
+
+        if not arg1.is_variable():
+            sys.stderr.write("ERROR: Instruction SETCHAR: argument 1 is not a variable")
+            exit(53)
+        if not arg3.get_type() in ('var', str):
+            sys.stderr.write("ERROR: Instruction SETCHAR: argument 3 is not a variable or a string")
+            exit(53)
+        if not arg2.get_type() in ('var', int):
+            sys.stderr.write("ERROR: Instruction SETCHAR: argument 2 is not a variable or a int")
+            exit(53)
+
         super().__init__("SETCHAR", arg1, arg2, arg3)
 
     @classmethod
     def execute(cls, arg1: Argument | None, arg2: Argument | None, arg3: Argument | None) -> None:
-        pass
+        """
+        Modifies character on position arg2 in a string variable arg1 to the first character from string arg3.
+        :param arg1: var(string)
+        :param arg2: int
+        :param arg3: string
+        """
+        arg1 = f.get_var(arg1.get_name(), arg1.get_frame())
+        if arg1.get_var_type() != str:
+            sys.stderr.write("ERROR: Instruction SETCHAR: argument 1 is not a string")
+            exit(53)
+
+        if arg2.is_variable():
+            arg2 = f.get_var(arg2.get_name(), arg2.get_frame())
+            if arg2.get_var_type() != int:
+                sys.stderr.write("ERROR: Instruction SETCHAR: argument 2 is not an int")
+                exit(53)
+
+        if arg3.is_variable():
+            arg3 = f.get_var(arg3.get_name(), arg3.get_frame())
+            if arg3.get_var_type() != str:
+                sys.stderr.write("ERROR: Instruction SETCHAR: argument 3 is not a string")
+                exit(53)
+        try:
+            string_to_change = list(arg1.get_value())
+            string_to_change[arg2.get_value()] = arg3.get_value()[0]
+            arg1.set_value(''.join(string_to_change))
+        except IndexError:
+            sys.stderr.write("ERROR: Instruction SETCHAR: index outside of arg1 or arg3 is an empty string")
+            exit(58)
 
 
 class TYPE(Instruction):
+    """
+    Instruction TYPE from IPPcode23 requires 2 arguments of type variable and symbol.
+    """
     def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 2:
             sys.stderr.write("ERROR: Instruction TYPE got " + str(arg_num) + " arguments, 2 arguments expected")
@@ -1306,11 +1558,42 @@ class TYPE(Instruction):
 
         arg1 = Argument(types[0], arguments[0])
         arg2 = Argument(types[1], arguments[1])
+
+        if not arg1.is_variable():
+            sys.stderr.write("ERROR: Instruction TYPE: argument 1 is not of type variable")
+            exit(53)
+        if not arg2.is_symbol():
+            sys.stderr.write("ERROR: Instruction TYPE: argument 2 is not of type symbol")
+            exit(53)
         super().__init__("TYPE", arg1, arg2)
 
     @classmethod
     def execute(cls, arg1: Argument | None, arg2: Argument | None, arg3: Argument | None) -> None:
-        pass
+        """
+        Finds out type of constant (int, string, nil, bool) of arg2 and writes the result as a string to a variable
+        specified by arg1.
+        :param arg1: var
+        :param arg2: symb
+        :param arg3: None
+        """
+        arg1 = f.get_var(arg1.get_name(), arg1.get_frame())
+
+        my_type = arg2.get_type()
+        if my_type == 'var':
+            arg2 = f.get_var(arg2.get_name(), arg2.get_frame())
+            my_type = arg2.get_var_type()
+            if my_type is None:
+                my_type = ''
+                arg1.set_value(my_type)
+                return
+
+        type_dict = {
+            int: 'int',
+            str: 'string',
+            bool: 'bool',
+            'nil': 'nil',
+        }
+        arg1.set_value(type_dict[my_type])
 
 
 class LABEL(Instruction):
@@ -1360,10 +1643,19 @@ class JUMP(Instruction):
 
     @classmethod
     def execute(cls, arg1: Argument | None, arg2: Argument | None, arg3: Argument | None) -> None:
+        """
+        Jumps to the label specified by arg1.
+        :param arg1: label
+        :param arg2: None
+        :param arg3: None
+        """
         c.set_count(s.jump(arg1.get_value()))
 
 
 class JUMPIFEQ(Instruction):
+    """
+    Instruction JUMPIFEQ from IPPcode23 requires 3 arguments of type label, symbol and symbol.
+    """
     def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 3:
             sys.stderr.write("ERROR: Instruction JUMPIFEQ got " + str(arg_num) + " arguments, 3 arguments expected")
@@ -1372,14 +1664,62 @@ class JUMPIFEQ(Instruction):
         arg1 = Argument(types[0], arguments[0])
         arg2 = Argument(types[1], arguments[1])
         arg3 = Argument(types[2], arguments[2])
+
+        if arg1.get_type() != 'label':
+            sys.stderr.write("ERROR: Instruction JUMPIFEQ: argument 1 is not of type label")
+            exit(53)
+        if not arg2.is_symbol():
+            sys.stderr.write("ERROR: Instruction JUMPIFEQ: argument 2 or 3 is not a symbol")
+            exit(53)
+
         super().__init__("JUMPIFEQ", arg1, arg2, arg3)
 
     @classmethod
     def execute(cls, arg1: Argument | None, arg2: Argument | None, arg3: Argument | None) -> None:
-        pass
+        """
+        Jumps to a label specified by arg1 if arg2 and arg3 are equal. It doesn't utilize instruction EQ because that
+        would require defining a variable in a known Frame which might cause problems if a variable of the same name
+        would be used by program.
+        :param arg1: label
+        :param arg2: symb
+        :param arg3: symb
+        """
+        # arg = Argument('var', 'GF@MyTinyGlobalTemporaryVariableUsedBySomeInstructionsWithSillyButUniqueEnoughName000')
+        # DEFVAR.execute(arg, None, None)
+        # EQ.execute(arg, arg2, arg3)
+        # if arg.get_value():
+        #     JUMP.execute(arg1, None, None)
+
+        type1 = arg2.get_type()
+        type2 = arg3.get_type()
+
+        if arg2.is_variable():
+            arg2 = f.get_var(arg2.get_name(), arg2.get_frame())
+            type1 = arg2.get_var_type()
+            if type1 not in (int, str, bool, 'nil'):
+                sys.stderr.write("ERROR: Instruction JUMPIFEQ: wrong type of argument 2")
+                exit(53)
+
+        if arg3.is_variable():
+            arg3 = f.get_var(arg3.get_name(), arg3.get_frame())
+            type2 = arg3.get_var_type()
+            if type2 not in (int, str, bool, 'nil'):
+                sys.stderr.write("ERROR: Instruction JUMPIFEQ: wrong type of argument 3")
+                exit(53)
+
+        if type1 != type2 and type1 != 'nil' and type2 != 'nil':
+            sys.stderr.write("ERROR: Instruction JUMPIFEQ: can't compare arguments of different types "
+                             "unless one of them is of type nil")
+            exit(53)
+
+        if type1 == type2 and arg2.get_value() == arg3.get_value():
+            JUMP.execute(arg1, None, None)
 
 
 class JUMPIFNEQ(Instruction):
+    """
+    Instruction JUMPIFNEQ from IPPcode23 requires 3 arguments of type label, symbol and symbol.
+    """
     def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 3:
             sys.stderr.write("ERROR: Instruction JUMPIFNEQ got " + str(arg_num) + " arguments, 3 arguments expected")
@@ -1388,42 +1728,127 @@ class JUMPIFNEQ(Instruction):
         arg1 = Argument(types[0], arguments[0])
         arg2 = Argument(types[1], arguments[1])
         arg3 = Argument(types[2], arguments[2])
+
+        if arg1.get_type() != 'label':
+            sys.stderr.write("ERROR: Instruction JUMPIFNEQ: argument 1 is not of type label")
+            exit(53)
+        if not arg2.is_symbol():
+            sys.stderr.write("ERROR: Instruction JUMPIFNEQ: argument 2 or 3 is not a symbol")
+            exit(53)
+
         super().__init__("JUMPIFNEQ", arg1, arg2, arg3)
 
     @classmethod
     def execute(cls, arg1: Argument | None, arg2: Argument | None, arg3: Argument | None) -> None:
-        pass
+        """
+        Jumps to a label specified by arg1 if arg2 and arg3 are not equal.
+        :param arg1: label
+        :param arg2: symb
+        :param arg3: symb
+        """
+
+        type1 = arg2.get_type()
+        type2 = arg3.get_type()
+
+        if arg2.is_variable():
+            arg2 = f.get_var(arg2.get_name(), arg2.get_frame())
+            type1 = arg2.get_var_type()
+            if type1 not in (int, str, bool, 'nil'):
+                sys.stderr.write("ERROR: Instruction JUMPIFNEQ: wrong type of argument 2")
+                exit(53)
+
+        if arg3.is_variable():
+            arg3 = f.get_var(arg3.get_name(), arg3.get_frame())
+            type2 = arg3.get_var_type()
+            if type2 not in (int, str, bool, 'nil'):
+                sys.stderr.write("ERROR: Instruction JUMPIFNEQ: wrong type of argument 3")
+                exit(53)
+
+        if type1 != type2 and type1 != 'nil' and type2 != 'nil':
+            sys.stderr.write("ERROR: Instruction JUMPIFNEQ: can't compare arguments of different types "
+                             "unless one of them is of type nil")
+            exit(53)
+
+        if type1 != type2 or arg2.get_value() != arg3.get_value():
+            JUMP.execute(arg1, None, None)
 
 
 class EXIT(Instruction):
+    """
+    Instruction EXIT from IPPcode23 requires 1 argument of type int.
+    """
     def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 1:
             sys.stderr.write("ERROR: Instruction EXIT got " + str(arg_num) + " arguments, 1 argument expected")
             exit(52)
 
         arg1 = Argument(types[0], arguments[0])
+
+        if arg1.get_type() not in ('var', int):
+            sys.stderr.write("ERROR: Instruction EXIT: argument 1 is not a valid symbol")
+            exit(53)
+
         super().__init__("EXIT", arg1)
 
     @classmethod
     def execute(cls, arg1: Argument | None, arg2: Argument | None, arg3: Argument | None) -> None:
-        pass
+        if arg1.is_variable():
+            arg1 = f.get_var(arg1.get_name(), arg1.get_frame())
+            if arg1.get_var_type != int:
+                sys.stderr.write("ERROR: Instruction EXIT: argument 1 is not an int")
+                exit(53)
+
+        val = arg1.get_value()
+        if 0 <= val <= 49:
+            exit(val)
+        else:
+            sys.stderr.write("ERROR: Instruction EXIT: invalid exit value")
+            exit(57)
 
 
 class DPRINT(Instruction):
+    """
+    Instruction DPRINT from IPPcode23 requires 1 argument of type symbol.
+    """
     def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 1:
             sys.stderr.write("ERROR: Instruction DPRINT got " + str(arg_num) + " arguments, 1 argument expected")
             exit(52)
 
         arg1 = Argument(types[0], arguments[0])
+
+        if not arg1.is_symbol():
+            sys.stderr.write("ERROR: Instruction DPRINT: argument 1 is not a symbol")
+            exit(53)
+
         super().__init__("DPRINT", arg1)
 
     @classmethod
     def execute(cls, arg1: Argument | None, arg2: Argument | None, arg3: Argument | None) -> None:
-        pass
+        """
+        Writes value or arg1 to stderr.
+        :param arg1: symb
+        :param arg2: None
+        :param arg3: None
+        """
+        if arg1.is_variable():
+            arg1 = f.get_var(arg1.get_name(), arg1.get_frame())
+
+        val = arg1.get_value()
+        if arg1.get_type() == 'nil' or arg1.get_var_type() == 'nil':
+            val = ''
+
+        # TODO: interpret escape sequences - \032 => whitespace
+        if arg1.get_type() == str or arg1.get_var_type() == str:
+            pass
+
+        sys.stderr.write(val)
 
 
 class BREAK(Instruction):
+    """
+    Instruction BREAK from IPPcode23 requires 0 arguments.
+    """
     def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 0:
             sys.stderr.write("ERROR: Instruction BREAK got " + str(arg_num) + " arguments, 0 arguments expected")
@@ -1433,7 +1858,15 @@ class BREAK(Instruction):
 
     @classmethod
     def execute(cls, arg1: Argument | None, arg2: Argument | None, arg3: Argument | None) -> None:
-        pass
+        """
+        Writes the state of interpret to stderr.
+        :param arg1: None
+        :param arg2: None
+        :param arg3: None
+        """
+        sys.stderr.write('\n' + 'Labels => ' + s.ret_all('L') + '\n')
+        sys.stderr.write('Data stack => ' + s.ret_all('D') + '\n')
+        sys.stderr.write('Call stack => ' + s.ret_all('C') + '\n\n')
 
 
 class Factory:
