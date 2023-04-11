@@ -1315,12 +1315,26 @@ class READ(Instruction):
                 exit(53)
 
         try:
+            #  get value from input  #
             if args.input is None:
                 value = input()
             else:
                 value = Input.pop()
-            value = arg2.get_value()(value)
-        except (KeyboardInterrupt, IndexError):
+            # ---------------------- #
+            in_type = arg2.get_value()
+            # true of any case => True; anything else => False
+            if in_type == bool:
+                if value.upper() == 'TRUE':
+                    value = True
+                else:
+                    value = False
+            else:
+                if in_type == int:
+                    value = int(value)
+                elif in_type == str:
+                    for ch in set(re.findall(r'\\\d{3}', value)):
+                        value = value.replace(ch, chr(int(ch[1:])))
+        except (KeyboardInterrupt, IndexError, ValueError):
             value = 'nil'
 
         arg1.set_value(value)
@@ -2018,27 +2032,22 @@ if __name__ == '__main__':
         exit(10)
 
     #   Only input file
-    # elif args.source is None:
-    #     SourceString = ""
-    #     with fileinput.input('-') as f:
-    #         for line in f:
-    #             SourceString += line
-    #     root = Tree.fromstring(SourceString)
-    #
-    #     with open(args.input.name, encoding=args.input.encoding) as In:
-    #         InputFile = In.read()
+    elif args.source is None:
+        SourceString = ""
+        with fileinput.input('-') as fil:
+            for line in fil:
+                SourceString += line
+        root = Tree.fromstring(SourceString)
 
-    #   Only source file
-    # elif args.input is None:
-    #     # noinspection PyUnresolvedReferences
-    #     with open(args.source.name, encoding=args.source.encoding) as SourceFile:
-    #         tree = Tree.parse(SourceFile)
-    #         root = tree.getroot()
-    #
-    #     InputFile = ""
-    #     with fileinput.input('-') as f:
-    #         for line in f:
-    #             InputFile += line
+        with open(args.input.name, encoding=args.input.encoding) as In:
+            InputFile = In.read()
+
+    #  Only source file
+    elif args.input is None:
+        # noinspection PyUnresolvedReferences
+        with open(args.source.name, encoding=args.source.encoding) as SourceFile:
+            tree = Tree.parse(SourceFile)
+            root = tree.getroot()
 
     #   Both files
     else:
@@ -2054,9 +2063,10 @@ if __name__ == '__main__':
         sys.stderr.write('ERROR: No "program" root of XML')
         exit(31)
 
-    # noinspection PyUnboundLocalVariable
-    Input = list(InputFile.splitlines())
-    Input.reverse()
+    if args.input:
+        # noinspection PyUnboundLocalVariable
+        Input = list(InputFile.splitlines())
+        Input.reverse()
     # for element in Input:
     #     s.push(element, 'I')
 

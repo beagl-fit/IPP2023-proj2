@@ -1,3 +1,3 @@
-ahoj\010
+ahoj\010\066
 ahoj2\010
 true
