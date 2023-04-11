@@ -15,6 +15,7 @@ class Counter:
     """
     Object serves as a program counter. Current value is stored in the `_Count` variable.
     """
+
     def __init__(self) -> None:
         self._Count = 0
 
@@ -222,7 +223,7 @@ class Stack:
     :var _DataStack: PUSHS, POPS
     :var _CallStack: CALL, RETURN
     """
-    _LabelStack = []    # _LabelStack = [[LABEL,NUMBER],[LABEL2,NUMBER2],...]
+    _LabelStack = []  # _LabelStack = [[LABEL,NUMBER],[LABEL2,NUMBER2],...]
     _DataStack = []
     _CallStack = []
     _InputStack = []
@@ -233,7 +234,7 @@ class Stack:
         :param val: value to be added
         :param stack: L | D | C
         """
-        if stack == "L":    # stack().push([arg1.getvalue(), c.get_count()]
+        if stack == "L":  # stack().push([arg1.getvalue(), c.get_count()]
             for num in range(len(self._LabelStack)):
                 if val[0] in self._LabelStack[num][0]:
                     sys.stderr.write("ERROR: Stack push(): label already exists\n")
@@ -346,10 +347,14 @@ class Frame:
 
     # appends temporary frame to stack of frame and changes frames of appended variables
     def push_frame(self):
-        for arg in self._TemporaryFrame:
-            arg.set_frame("LF")
-        self._FrameStack.append(self._TemporaryFrame)
-        self._TemporaryFrame = None
+        if self._TemporaryFrame is not None:
+            for arg in self._TemporaryFrame:
+                arg.set_frame("LF")
+            self._FrameStack.append(self._TemporaryFrame)
+            self._TemporaryFrame = None
+        else:
+            sys.stderr.write("ERROR: push(): frame undefined\n")
+            exit(55)
 
     # adds variable to chosen frame
     def add_var_to_frame(self, var: Argument, frame: str):
@@ -411,6 +416,7 @@ class Frame:
     def clear_temp_frame(self):
         self._TemporaryFrame = []
 
+
 # TODO: check - arg_value is from arg_type, arg_value OK for instruction
 # TODO: check - correct type??
 # TODO: string ab\032cd => ab cd (write)
@@ -418,6 +424,7 @@ class MOVE(Instruction):
     """
     Instruction MOVE from IPPcode23 requires 2 arguments of type variable and symbol.
     """
+
     def __init__(self, arg_num: int, arguments: list, types: list) -> None:
         if arg_num != 2:
             sys.stderr.write("ERROR: Instruction MOVE got " + str(arg_num) + " arguments, 2 arguments expected")
@@ -455,6 +462,7 @@ class CREATEFRAME(Instruction):
     """
     Instruction CREATEFRAME from IPPcode23 requires 0 arguments.
     """
+
     def __init__(self, arg_num: int, arguments: list, types: list) -> None:
         if arg_num != 0:
             sys.stderr.write("ERROR: Instruction CREATEFRAME got " + str(arg_num) + " arguments, 0 arguments expected")
@@ -477,6 +485,7 @@ class PUSHFRAME(Instruction):
     """
     Instruction PUSHFRAME from IPPcode23 requires 0 arguments.
     """
+
     def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 0:
             sys.stderr.write("ERROR: Instruction PUSHFRAME got " + str(arg_num) + " arguments, 0 arguments expected")
@@ -500,6 +509,7 @@ class POPFRAME(Instruction):
     """
     Instruction POPFRAME from IPPcode23 requires 0 arguments.
     """
+
     def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 0:
             sys.stderr.write("ERROR: Instruction POPFRAME got " + str(arg_num) + " arguments, 0 arguments expected")
@@ -523,6 +533,7 @@ class DEFVAR(Instruction):
     """
     Instruction DEFVAR from IPPcode23 requires 1 argument of type variable.
     """
+
     def __init__(self, arg_num: int, arguments: list, types: list) -> None:
         if arg_num != 1:
             sys.stderr.write("ERROR: Instruction DEFVAR got " + str(arg_num) + " arguments, 1 argument expected")
@@ -554,17 +565,18 @@ class CALL(Instruction):
     """
     Instruction CALL from IPPcode23 requires 1 argument of type label.
     """
+
     def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 1:
             sys.stderr.write("ERROR: Instruction CALL got " + str(arg_num) + " arguments, 1 argument expected")
             exit(52)
-            
+
         arg1 = Argument(types[0], arguments[0])
 
         if arg1.get_type() != 'label':
             sys.stderr.write("ERROR: Instruction CALL: argument 1 is not of type label")
             exit(53)
-            
+
         super().__init__("CALL", arg1)
 
     @classmethod
@@ -583,6 +595,7 @@ class RETURN(Instruction):
     """
     Instruction RETURN from IPPcode23 requires 0 arguments.
     """
+
     def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 0:
             sys.stderr.write("ERROR: Instruction RETURN got " + str(arg_num) + " arguments, 0 arguments expected")
@@ -605,6 +618,7 @@ class PUSHS(Instruction):
     """
     Instruction PUSHS from IPPcode23 requires 1 argument of type symbol.
     """
+
     def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 1:
             sys.stderr.write("ERROR: Instruction PUSHS got " + str(arg_num) + " arguments, 1 argument expected")
@@ -636,6 +650,7 @@ class POPS(Instruction):
     """
     Instruction POPS from IPPcode23 requires 1 argument of type variable.
     """
+
     def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 1:
             sys.stderr.write("ERROR: Instruction POPS got " + str(arg_num) + " arguments, 1 argument expected")
@@ -665,6 +680,7 @@ class ADD(Instruction):
     """
     Instruction ADD from IPPcode23 requires 3 arguments of type variable, int and int.
     """
+
     def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 3:
             sys.stderr.write("ERROR: Instruction ADD got " + str(arg_num) + " arguments, 3 arguments expected")
@@ -712,6 +728,7 @@ class SUB(Instruction):
     """
     Instruction SUB from IPPcode23 requires 3 arguments of type variable, int and int.
     """
+
     def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 3:
             sys.stderr.write("ERROR: Instruction SUB got " + str(arg_num) + " arguments, 3 arguments expected")
@@ -759,6 +776,7 @@ class MUL(Instruction):
     """
     Instruction MUL from IPPcode23 requires 3 arguments of type variable, int and int.
     """
+
     def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 3:
             sys.stderr.write("ERROR: Instruction MUL got " + str(arg_num) + " arguments, 3 arguments expected")
@@ -806,6 +824,7 @@ class IDIV(Instruction):
     """
     Instruction IDIV from IPPcode23 requires 3 arguments of type variable, int and int.
     """
+
     def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 3:
             sys.stderr.write("ERROR: Instruction IDIV got " + str(arg_num) + " arguments, 3 arguments expected")
@@ -858,6 +877,7 @@ class LT(Instruction):
     """
     Instruction LT from IPPcode23 requires 3 arguments of type variable, symbol and symbol.
     """
+
     def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 3:
             sys.stderr.write("ERROR: Instruction LT got " + str(arg_num) + " arguments, 3 arguments expected")
@@ -918,6 +938,7 @@ class GT(Instruction):
     """
     Instruction GT from IPPcode23 requires 3 arguments of type variable, symbol and symbol.
     """
+
     def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 3:
             sys.stderr.write("ERROR: Instruction GT got " + str(arg_num) + " arguments, 3 arguments expected")
@@ -978,6 +999,7 @@ class EQ(Instruction):
     """
     Instruction GT from IPPcode23 requires 3 arguments of type variable, symbol and symbol.
     """
+
     def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 3:
             sys.stderr.write("ERROR: Instruction EQ got " + str(arg_num) + " arguments, 3 arguments expected")
@@ -1041,6 +1063,7 @@ class AND(Instruction):
     """
     Instruction AND from IPPcode23 requires 3 arguments of type variable, bool and bool.
     """
+
     def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 3:
             sys.stderr.write("ERROR: Instruction AND got " + str(arg_num) + " arguments, 3 arguments expected")
@@ -1088,6 +1111,7 @@ class OR(Instruction):
     """
     Instruction OR from IPPcode23 requires 3 arguments of type variable, bool and bool.
     """
+
     def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 3:
             sys.stderr.write("ERROR: Instruction OR got " + str(arg_num) + " arguments, 3 arguments expected")
@@ -1135,6 +1159,7 @@ class NOT(Instruction):
     """
     Instruction NOT from IPPcode23 requires 2 arguments of type variable and bool.
     """
+
     def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 2:
             sys.stderr.write("ERROR: Instruction NOT got " + str(arg_num) + " arguments, 2 arguments expected")
@@ -1175,6 +1200,7 @@ class INT2CHAR(Instruction):
     """
     Instruction INT2CHAR from IPPcode23 requires 2 arguments of type variable and int.
     """
+
     def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 2:
             sys.stderr.write("ERROR: Instruction INT2CHAR got " + str(arg_num) + " arguments, 2 arguments expected")
@@ -1219,6 +1245,7 @@ class STRI2INT(Instruction):
     """
     Instruction STRI2INT from IPPcode23 requires 3 arguments of type variable, string and int.
     """
+
     def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 3:
             sys.stderr.write("ERROR: Instruction STRI2INT got " + str(arg_num) + " arguments, 3 arguments expected")
@@ -1280,6 +1307,7 @@ class READ(Instruction):
     """
     Instruction READ from IPPcode23 requires 2 arguments of type variable and type.
     """
+
     def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 2:
             sys.stderr.write("ERROR: Instruction READ got " + str(arg_num) + " arguments, 2 arguments expected")
@@ -1378,6 +1406,7 @@ class CONCAT(Instruction):
     """
     Instruction CONCAT from IPPcode23 requires 3 arguments of type variable, string and string.
     """
+
     def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 3:
             sys.stderr.write("ERROR: Instruction CONCAT got " + str(arg_num) + " arguments, 3 arguments expected")
@@ -1425,6 +1454,7 @@ class STRLEN(Instruction):
     """
     Instruction STRLEN from IPPcode23 requires 2 arguments of type variable, string.
     """
+
     def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 2:
             sys.stderr.write("ERROR: Instruction STRLEN got " + str(arg_num) + " arguments, 2 arguments expected")
@@ -1465,6 +1495,7 @@ class GETCHAR(Instruction):
     """
     Instruction GETCHAR from IPPcode23 requires 3 arguments of type variable, string and int.
     """
+
     def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 3:
             sys.stderr.write("ERROR: Instruction GETCHAR got " + str(arg_num) + " arguments, 3 arguments expected")
@@ -1518,6 +1549,7 @@ class SETCHAR(Instruction):
     """
     Instruction SETCHAR from IPPcode23 requires 3 arguments of type variable, int and string.
     """
+
     def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 3:
             sys.stderr.write("ERROR: Instruction SETCHAR got " + str(arg_num) + " arguments, 3 arguments expected")
@@ -1576,6 +1608,7 @@ class TYPE(Instruction):
     """
     Instruction TYPE from IPPcode23 requires 2 arguments of type variable and symbol.
     """
+
     def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 2:
             sys.stderr.write("ERROR: Instruction TYPE got " + str(arg_num) + " arguments, 2 arguments expected")
@@ -1625,6 +1658,7 @@ class LABEL(Instruction):
     """
     Instruction LABEL from IPPcode23 requires 1 argument of type label.
     """
+
     def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 1:
             sys.stderr.write("ERROR: Instruction LABEL got " + str(arg_num) + " arguments, 1 argument expected")
@@ -1653,6 +1687,7 @@ class JUMP(Instruction):
     """
     Instruction JUMP from IPPcode23 requires 1 argument of type label.
     """
+
     def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 1:
             sys.stderr.write("ERROR: Instruction JUMP got " + str(arg_num) + " arguments, 1 argument expected")
@@ -1681,6 +1716,7 @@ class JUMPIFEQ(Instruction):
     """
     Instruction JUMPIFEQ from IPPcode23 requires 3 arguments of type label, symbol and symbol.
     """
+
     def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 3:
             sys.stderr.write("ERROR: Instruction JUMPIFEQ got " + str(arg_num) + " arguments, 3 arguments expected")
@@ -1745,6 +1781,7 @@ class JUMPIFNEQ(Instruction):
     """
     Instruction JUMPIFNEQ from IPPcode23 requires 3 arguments of type label, symbol and symbol.
     """
+
     def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 3:
             sys.stderr.write("ERROR: Instruction JUMPIFNEQ got " + str(arg_num) + " arguments, 3 arguments expected")
@@ -1802,6 +1839,7 @@ class EXIT(Instruction):
     """
     Instruction EXIT from IPPcode23 requires 1 argument of type int.
     """
+
     def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 1:
             sys.stderr.write("ERROR: Instruction EXIT got " + str(arg_num) + " arguments, 1 argument expected")
@@ -1835,6 +1873,7 @@ class DPRINT(Instruction):
     """
     Instruction DPRINT from IPPcode23 requires 1 argument of type symbol.
     """
+
     def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 1:
             sys.stderr.write("ERROR: Instruction DPRINT got " + str(arg_num) + " arguments, 1 argument expected")
@@ -1874,6 +1913,7 @@ class BREAK(Instruction):
     """
     Instruction BREAK from IPPcode23 requires 0 arguments.
     """
+
     def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 0:
             sys.stderr.write("ERROR: Instruction BREAK got " + str(arg_num) + " arguments, 0 arguments expected")
@@ -2107,7 +2147,7 @@ if __name__ == '__main__':
 
     if instrCount:
         # noinspection PyUnboundLocalVariable
-        for instr in i.get_list():      # loop through program to define labels for forward jumps
+        for instr in i.get_list():  # loop through program to define labels for forward jumps
             if instr.get_opcode() == "LABEL":
                 instr.execute(instr.get_arg(1), instr.get_arg(2), instr.get_arg(3))
             c.increment_count()
