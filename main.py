@@ -5,6 +5,7 @@
 
 import fileinput
 import argparse
+import re
 import sys
 import textwrap
 import xml.etree.ElementTree as Tree
@@ -79,32 +80,32 @@ class Argument:
         elif self._Type == str:
             if arg_value is None:
                 self._Value = ''
-            # TODO: change this
             else:
+                for ch in set(re.findall(r'\\\d{3}', arg_value)):
+                    arg_value = arg_value.replace(ch, chr(int(ch[1:])))
                 self._Value = arg_value
         elif self._Type == "nil":
             self._Value = 'nil'
         elif self._Type == bool:
-            if arg_value == 'True':
+            if arg_value.upper() == 'TRUE':
                 self._Value = True
-            elif arg_value == 'False':
+            elif arg_value.upper() == 'FALSE':
                 self._Value = False
             else:
-                exit(666)
-            # TODO: fix errcode for bool
+                sys.stderr.write("ERROR: Argument init: wrong bool argument value\n")
+                exit(53)
         elif self._Type == type:
-            if arg_value in ('int', 'string', 'bool'):
+            if arg_value in ('int', 'string', 'bool', 'nil'):
                 self._Value = self._Types[arg_value]
             else:
-                exit(666)
-            # TODO: fix errcode for type
+                sys.stderr.write("ERROR: Argument init: wrong type argument value\n")
+                exit(53)
         elif self._Type == 'label':
             self._Value = arg_value
 
     def get_type(self):
         return self._Type
 
-    # todo: CHECK if try block is necessary
     def get_value(self) -> _Types:
         val = self._Value
         if val is None:
@@ -142,12 +143,10 @@ class Argument:
     def get_name(self):
         try:
             return self._Name
-        # TODO: mby change from sys err to: return None ???
         except AttributeError:
             sys.stderr.write("ERROR: Argument get_name(): argument is not variable\n")
             exit(53)
 
-    # TODO: no idea what this is
     def set_frame(self, frame: str) -> None:
         """
         Changes scope of variable from LF to TF or from TF to LF. Used when pushing or popping a frame.
@@ -166,13 +165,6 @@ class Argument:
 
     def get_var_type(self):
         return self._VarType
-
-    # TODO: don't think this is necessary
-    def has_value(self):
-        try:
-            return self._Value
-        except AttributeError:
-            return False
 
     def is_symbol(self):
         return True if self.is_variable() or self._Type in (int, str, bool, 'nil') else False
@@ -233,6 +225,7 @@ class Stack:
     _LabelStack = []    # _LabelStack = [[LABEL,NUMBER],[LABEL2,NUMBER2],...]
     _DataStack = []
     _CallStack = []
+    _InputStack = []
 
     def push(self, val, stack: str) -> None:
         """
@@ -250,6 +243,8 @@ class Stack:
             self._DataStack.append(val)
         elif stack == "C":
             self._CallStack.append(val)
+        elif stack == "I":
+            self._InputStack.append(val)
         else:
             sys.stderr.write("ERROR: Stack push(): unknown 'stack'\n")
             exit(99)
@@ -415,7 +410,6 @@ class Frame:
     # clears temporary frame
     def clear_temp_frame(self):
         self._TemporaryFrame = []
-
 
 # TODO: check - arg_value is from arg_type, arg_value OK for instruction
 # TODO: check - correct type??
@@ -1312,7 +1306,24 @@ class READ(Instruction):
         :param arg2: type
         :param arg3: None
         """
-        pass
+        arg1 = f.get_var(arg1.get_name(), arg1.get_frame())
+
+        if arg2.is_variable():
+            arg2 = f.get_var(arg2.get_name(), arg2.get_frame())
+            if arg2.get_var_type() != type:
+                sys.stderr.write("ERROR: Instruction READ: argument 2 is not a valid type")
+                exit(53)
+
+        try:
+            if args.input is None:
+                value = input()
+            else:
+                value = Input.pop()
+            value = arg2.get_value()(value)
+        except (KeyboardInterrupt, IndexError):
+            value = 'nil'
+
+        arg1.set_value(value)
 
 
 class WRITE(Instruction):
@@ -2007,27 +2018,27 @@ if __name__ == '__main__':
         exit(10)
 
     #   Only input file
-    elif args.source is None:
-        SourceString = ""
-        with fileinput.input('-') as f:
-            for line in f:
-                SourceString += line
-        root = Tree.fromstring(SourceString)
-
-        with open(args.input.name, encoding=args.input.encoding) as In:
-            InputFile = In.read()
+    # elif args.source is None:
+    #     SourceString = ""
+    #     with fileinput.input('-') as f:
+    #         for line in f:
+    #             SourceString += line
+    #     root = Tree.fromstring(SourceString)
+    #
+    #     with open(args.input.name, encoding=args.input.encoding) as In:
+    #         InputFile = In.read()
 
     #   Only source file
-    elif args.input is None:
-        # noinspection PyUnresolvedReferences
-        with open(args.source.name, encoding=args.source.encoding) as SourceFile:
-            tree = Tree.parse(SourceFile)
-            root = tree.getroot()
-
-        InputFile = ""
-        with fileinput.input('-') as f:
-            for line in f:
-                InputFile += line
+    # elif args.input is None:
+    #     # noinspection PyUnresolvedReferences
+    #     with open(args.source.name, encoding=args.source.encoding) as SourceFile:
+    #         tree = Tree.parse(SourceFile)
+    #         root = tree.getroot()
+    #
+    #     InputFile = ""
+    #     with fileinput.input('-') as f:
+    #         for line in f:
+    #             InputFile += line
 
     #   Both files
     else:
@@ -2046,8 +2057,8 @@ if __name__ == '__main__':
     # noinspection PyUnboundLocalVariable
     Input = list(InputFile.splitlines())
     Input.reverse()
-    for element in Input:
-        s.push(element, 'I')
+    # for element in Input:
+    #     s.push(element, 'I')
 
     # Sort instructions, non-author code from:
     #    https://devdreamz.com/question/931441-python-sort-xml-elements-by-and-tag-and-attributes-recursively

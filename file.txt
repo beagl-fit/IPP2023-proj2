@@ -1,0 +1,3 @@
+ahoj\010
+ahoj2\010
+true
