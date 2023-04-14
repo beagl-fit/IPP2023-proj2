@@ -8,13 +8,13 @@ import argparse
 import re
 import sys
 import textwrap
-import xml.etree.ElementTree
 import xml.etree.ElementTree as Tree
 
 
 class Counter:
     """
     Object serves as a program counter. Current value is stored in the `_Count` variable.
+    :var _Count: `int`
     """
 
     def __init__(self) -> None:
@@ -48,11 +48,15 @@ class Counter:
 
 
 class Argument:
-    # TODO: docstrings
     """
-    some text
+    Object Argument is used by instructions, it is derivative from XML arg element. _VarType, _Frame and _Name are
+    None unless _Type is `var`. The specific _Value is based on _Type/_VarType
+    :var _Type: `_Types`
+    :var _Value:
+    :var _VarType: var
+    :var _Frame: var [GF/LF/TF]
+    :var _Name: var
     """
-    # GF/LF/TF@var_name, int/string/bool/nil/type/label => value
     _Types = {
         'int': int,
         'string': str,
@@ -109,17 +113,24 @@ class Argument:
         elif self._Type == 'label':
             self._Value = arg_value
 
-    def get_type(self):
+    def get_type(self) -> type:
         return self._Type
 
     def get_value(self) -> _Types:
-        val = self._Value
-        if val is None:
+        """
+        Method returns value of Argument.
+        :return: `value` of type in _Types
+        """
+        if self._Value is None:
             sys.stderr.write("ERROR: Argument get_value(): Empty value\n")
             exit(56)
         return self._Value
 
-    def set_value(self, value):
+    def set_value(self, value) -> None:
+        """
+        Sets _Value and _VarType if Argument is a variable. _VarType is based on type of `value`.
+        :param value: value to be set
+        """
         if self._Type == "var":
             if value is None:
                 self._VarType = str
@@ -140,18 +151,22 @@ class Argument:
             sys.stderr.write("ERROR: Argument set_value(): setting value to non-variable argument\n")
             exit(53)
 
-    def get_frame(self):
-        try:
-            return self._Frame
-        except AttributeError:
-            return "NONE"
+    def get_frame(self) -> str:
+        """
+        Method returns frame of variable or None if Argument is not a variable.
+        :return: TF/LF/GF/None
+        """
+        return self._Frame
 
-    def get_name(self):
-        try:
-            return self._Name
-        except AttributeError:
-            sys.stderr.write("ERROR: Argument get_name(): argument is not variable\n")
-            exit(53)
+    def get_name(self) -> str:
+        """
+        Method returns name of a variable if Argument is a variable or None if it isn't.
+        """
+        # try:
+        return self._Name
+        # except AttributeError:
+        #     sys.stderr.write("ERROR: Argument get_name(): argument is not variable\n")
+        #     exit(53)
 
     def set_frame(self, frame: str) -> None:
         """
@@ -166,13 +181,16 @@ class Argument:
             sys.stderr.write("ERROR: Argument set_frame(): can't set frame\n")
             exit(57)
 
-    def is_variable(self):
+    def is_variable(self) -> bool:
         return True if self._Type == 'var' else False
 
-    def get_var_type(self):
+    def get_var_type(self) -> _Types:
+        """
+        Method returns type of value saved in a variable.
+        """
         return self._VarType
 
-    def is_symbol(self):
+    def is_symbol(self) -> bool:
         return True if self.is_variable() or self._Type in (int, str, bool, 'nil') else False
 
 
@@ -224,14 +242,13 @@ class Stack:
     """
     Stack is a class containing 3 different stack. Stacks are implemented as lists and are needed for correct
     function of different IPPcode23 instructions.
-    :var _LabelStack: LABEL, JUMP(s)
+    :var _LabelStack: LABEL, JUMP(s) - NOT really a stack
     :var _DataStack: PUSHS, POPS
     :var _CallStack: CALL, RETURN
     """
     _LabelStack = []  # _LabelStack = [[LABEL,NUMBER],[LABEL2,NUMBER2],...]
     _DataStack = []
     _CallStack = []
-    _InputStack = []
 
     def push(self, val, stack: str) -> None:
         """
@@ -249,8 +266,6 @@ class Stack:
             self._DataStack.append(val)
         elif stack == "C":
             self._CallStack.append(val)
-        elif stack == "I":
-            self._InputStack.append(val)
         else:
             sys.stderr.write("ERROR: Stack push(): unknown 'stack'\n")
             exit(99)
@@ -278,11 +293,10 @@ class Stack:
 
     def ret_all(self, stack: str) -> str:
         """
-        Ret_all method returns all everything on a stack specified by the stack param
-        :param stack: L | D
+        Ret_all method returns all everything on a stack specified by the stack param.
+        :param stack: L | D | C
         :return: stack elements
         """
-        # TODO: do DATA stack
         ret = ''
         if stack == "L":
             if len(self._LabelStack):
@@ -296,10 +310,9 @@ class Stack:
                 ret = 'EMPTY; '
         elif stack == "D":
             if len(self._DataStack):
-                for label in self._DataStack:
-                    ret += label[0]
-                    ret += ':'
-                    ret += str(label[1])
+                ret += 'B->T:: '
+                for data in self._DataStack:
+                    ret += str(data)
                     ret += '; '
             else:
                 ret = 'EMPTY;'
@@ -327,17 +340,26 @@ class Stack:
         exit(52)
 
 
-#   class to keep global, local and temporary frame, to know where variables are defined
-##  methods return_frame, push_frame, add_var_to_frame, get_var, pop_frame, is_in_frame, clear_temp_frame
 class Frame:
-    # TODO: docstrings
-    # TODO: local + temp frame init to None
+    """
+    Object Frame keeps track of declared and/or defined variables and their scopes. Both temporary (TF) and local (LF)
+    frames start as undefined. TF is defined when instruction `CreateFrame` is called. To create a LF instruction
+    `PushFrame` needs to be called. This will create LT from TF and make TF undefined again. If LF was already defined,
+    another use of `PushFrame` will hide the current LF and to use them again instruction `PopFrame` needs to be called.
+    :var _GlobalFrame: contains global variables
+    :var _TemporaryFrame: contains variables in temporary frame
+    :var _FrameStack: contains pushed temporary frames
+    """
     _GlobalFrame = []
     _FrameStack = []
     _TemporaryFrame = None
 
-    # return all variables in chosen frame
-    def return_frame(self, frame: str):
+    def return_frame(self, frame: str) -> list:
+        """
+        Method returns list of all variables inside a frame specified by `frame` param.
+        :param frame: LF | TF | GF
+        :return:
+        """
         if frame == "LF":
             if len(self._FrameStack):
                 return self._FrameStack[-1]
@@ -351,41 +373,63 @@ class Frame:
         exit(55)
 
     # appends temporary frame to stack of frame and changes frames of appended variables
-    def push_frame(self):
-        if self._TemporaryFrame is not None:
-            for arg in self._TemporaryFrame:
-                arg.set_frame("LF")
-            self._FrameStack.append(self._TemporaryFrame)
-            self._TemporaryFrame = None
-        else:
+    def push_frame(self) -> None:
+        """
+        Method takes all variables inside defined temporary frame and puts them on top of `_FrameStack`, changes their
+        frame from TF to LF and makes temporary frame undefined again.
+        """
+        if self._TemporaryFrame is None:
             sys.stderr.write("ERROR: push(): frame undefined\n")
             exit(55)
 
-    # adds variable to chosen frame
-    def add_var_to_frame(self, var: Argument, frame: str):
+        for variable in self._TemporaryFrame:
+            variable.set_frame("LF")
+        self._FrameStack.append(self._TemporaryFrame)
+        self._TemporaryFrame = None
+
+    def add_var_to_frame(self, var: Argument, frame: str) -> None:
+        """
+        Method which adds variable specified by param `var` to a frame specified by param `frame`. Local and temporary
+        frames have to be defined first.
+        :param var: Argument of type 'var'
+        :param frame: LF | GF | TF
+        """
         if frame == "GF":
             self._GlobalFrame.append(var)
         elif frame == "TF":
             self._TemporaryFrame.append(var)
+        elif frame == "LF":
+            try:
+                self._FrameStack[-1].append(var)
+            except IndexError:
+                sys.stderr.write("ERROR: add_var_to_frame(): frame doesn't exist\n")
+                exit(55)
         else:
             sys.stderr.write("ERROR: add_var_to_frame(): frame doesn't exist\n")
             exit(55)
 
-    # returns variable if variable with chosen name and frame exists
-    def get_var(self, name: str, frame: str):
+    #
+    def get_var(self, name: str, frame: str) -> Argument:
+        """
+        Method returns variable if variable with name specified by param `name` is declared inside of frame specified
+        by param `frame` exists.
+        :param name: name of variable
+        :param frame: LT | GF | TF
+        """
         if frame == "GF":
-            for var in self._GlobalFrame:
-                if var.get_name() == name:
-                    return var
+            for variable in self._GlobalFrame:
+                if variable.get_name() == name:
+                    return variable
         elif frame == "LF":
-            for var in self._FrameStack[-1]:
-                if var.get_name() == name:
-                    return var
+            if len(self._FrameStack):
+                for variable in self._FrameStack[-1]:
+                    if variable.get_name() == name:
+                        return variable
         elif frame == "TF":
             try:
-                for var in self._TemporaryFrame:
-                    if var.get_name() == name:
-                        return var
+                for variable in self._TemporaryFrame:
+                    if variable.get_name() == name:
+                        return variable
             except TypeError:
                 sys.stderr.write("ERROR: get_var(): frame doesn't exist\n")
                 exit(55)
@@ -395,36 +439,43 @@ class Frame:
         sys.stderr.write("ERROR: get_var(): non-existing variable access\n")
         exit(54)
 
-    # pops local frame to temporary frame and changes frames of popped variables
-    def pop_frame(self):
+    #
+    def pop_frame(self) -> None:
+        """
+        Method pops local frame to temporary frame and changes frames of popped variables from LF to TF. Any variables
+        inside temporary frame that might have existed before are no longer defined or declared inside the new frame.
+        """
         if len(self._FrameStack):
             self._TemporaryFrame = self._FrameStack.pop()
-            for arg in self._TemporaryFrame:
-                arg.set_frame("TF")
+            for argument in self._TemporaryFrame:
+                argument.set_frame("TF")
         else:
             sys.stderr.write("ERROR: pop_frame(): stack is empty\n")
             exit(55)
 
-    # returns True if variable with given name and frame is already in frame and False if it isn't
-    def is_in_frame(self, arg, frame: str):
+    #
+    def is_in_frame(self, argument, frame: str) -> bool:
+        """
+        Method returns True if variable with given name and frame is already in frame and False if it isn't.
+        :param argument: name of variable
+        :param frame: LF | GF | TF
+        """
         try:
             for variable in self.return_frame(frame):
-                if arg == variable:
+                if argument == variable:
                     return True
             return False
         except TypeError:
-            print(arg, frame, sep='\n')
             sys.stderr.write("ERROR: is_in_frame(): frame doesn't exist")
             exit(55)
 
-    # clears temporary frame
-    def clear_temp_frame(self):
+    def new_temp_frame(self) -> None:
+        """
+        Method makes temporary frame defined and clears any variables that were inside previously.
+        """
         self._TemporaryFrame = []
 
 
-# TODO: check - arg_value is from arg_type, arg_value OK for instruction
-# TODO: check - correct type??
-# TODO: string ab\032cd => ab cd (write)
 class MOVE(Instruction):
     """
     Instruction MOVE from IPPcode23 requires 2 arguments of type variable and symbol.
@@ -483,7 +534,7 @@ class CREATEFRAME(Instruction):
         :param arg2: None
         :param arg3: None
         """
-        f.clear_temp_frame()
+        f.new_temp_frame()
 
 
 class PUSHFRAME(Instruction):
@@ -592,7 +643,7 @@ class CALL(Instruction):
         :param arg2: None
         :param arg3: None
         """
-        s.push(c.get_count(), 'C')  # todo: check `count + 1` vs count
+        s.push(c.get_count(), 'C')
         JUMP.execute(arg1, None, None)
 
 
@@ -2020,19 +2071,16 @@ class Factory:
 
 
 # ______ERRORS______
-#  py ERROR
+#   XML ERRORs
 #   31 - XML file is not well-formed
 #   32 - unexpected XML structure   (dupes)
 
-#   2  - most argparse errors
-
-#  project ERROR
+#  project ERRORs
 #   10      - missing parameter
 #   11      - error when opening input files    - argparse errno 13
 #   12      - error when opening output files
-#   99      - internal error
 
-#  Interpreter ERROR
+#  Interpreter ERRORs
 #   52      - semantic ERROR in input   (unknown instruction, undef label or var redef)
 #   53      - wrong operand types
 #   54      - non-existing variable access (within existing frame)
@@ -2041,23 +2089,26 @@ class Factory:
 #   57      - wrong operand value (div by 0)
 #   58      - wrong string operation
 
+#  Internal ERROR - 99
+
 
 #   parameters
 #   --help
 #   --source=FILE   - XML code
 #   --input=FILE    - input of instructions
-
 if __name__ == '__main__':
     c = Counter()
     f = Frame()
     s = Stack()
-    #   Parsing arguments
+    # Argument parse:
+    # Check if there are other arguments alongside HELP
     if len(sys.argv) != 2:
         for arg in sys.argv:
             if arg == '-h' or arg == '--help':
                 sys.stderr.write('ERROR: help has to be the only argument passed')
                 exit(10)
 
+    # create argparse parser
     parser = argparse.ArgumentParser(
         exit_on_error=False,
         description='Python interpreter of IPPcode23',
@@ -2069,21 +2120,22 @@ if __name__ == '__main__':
     parser.add_argument("--source", metavar='file', type=argparse.FileType('r'), help='file containing XML code')
     parser.add_argument("--input", metavar='file', type=argparse.FileType('r'),
                         help='input of XML instructions (e.g. READ)')
+    # try to parse arguments with custom exit code in case of an error
     try:
         args = parser.parse_args()
     except argparse.ArgumentError or argparse.ArgumentTypeError:
         sys.stderr.write('ERROR: argparse')
         exit(11)
 
-    # Check availability of source and input files
+    # Check availability of source and input files and try to parse the source XML:
     root: Tree.Element
     InputFile: str
-    #   No file
+    # No file - ERROR
     if args.source is None and args.input is None:
-        sys.stderr.write('at least one of --source and --input required')  # parser.error()    <- error 2
+        sys.stderr.write('ERROR: at least one of --source and --input required')
         exit(10)
 
-    #   Only input file
+    # Only input file - OK
     elif args.source is None:
         SourceString = ""
         with fileinput.input('-') as fil:
@@ -2091,42 +2143,42 @@ if __name__ == '__main__':
                 SourceString += line
         try:
             root = Tree.fromstring(SourceString)
-        except xml.etree.ElementTree.ParseError:
+        except Tree.ParseError:
             sys.stderr.write('ERROR: XML parse')
             exit(31)
 
         with open(args.input.name, encoding=args.input.encoding) as In:
             InputFile = In.read()
 
-    #  Only source file
+    # Only source file - OK
     elif args.input is None:
         try:
             # noinspection PyUnresolvedReferences
             with open(args.source.name, encoding=args.source.encoding) as SourceFile:
                 tree = Tree.parse(SourceFile)
                 root = tree.getroot()
-        except xml.etree.ElementTree.ParseError:
+        except Tree.ParseError:
             sys.stderr.write('ERROR: XML parse')
             exit(31)
 
-    #   Both files
+    # Both files - OK
     else:
         try:
             with open(args.source.name, encoding=args.source.encoding) as SourceFile:
                 tree = Tree.parse(SourceFile)
                 root = tree.getroot()
-        except xml.etree.ElementTree.ParseError:
+        except Tree.ParseError:
             sys.stderr.write('ERROR: XML parse')
             exit(31)
 
         with open(args.input.name, encoding=args.input.encoding) as In:
             InputFile = In.read()
 
+    # check if root tag is `program` and if it has the `language="IPPcode23"` attribute
     # noinspection PyUnboundLocalVariable
     if root.tag != 'program':
         sys.stderr.write('ERROR: No "program" root of XML')
         exit(32)
-
     try:
         if root.attrib['language'] != 'IPPcode23':
             sys.stderr.write('ERROR: No "IPPcode23" language tag in root of XML')
@@ -2152,15 +2204,10 @@ if __name__ == '__main__':
                 instr[:] = sorted(instr, key=lambda child: (child.tag, child.get('desc')))
                 attribs = sorted(attrib.items())
                 attrib.clear()
-                # noinspection PyTypeChecker
                 attrib.update(attribs)
             # end of non-author code
-
-            if instr.tag != 'instruction':
-                sys.stderr.write('ERROR: Child element of program XML is not named "instruction"')
-                exit(32)
-    except ValueError:
-        sys.stderr.write('ERROR: Unexpected order value')
+    except (ValueError, TypeError):
+        sys.stderr.write('ERROR: Unexpected or missing value of the `order` attribute')
         exit(32)
 
     orderStack = []
@@ -2172,10 +2219,17 @@ if __name__ == '__main__':
     }
     i: Instruction
     instrCount = 0
+
+    # check children of root element (instructions) and their children (arguments)
     for instr in root:
         numOfArgs = len(instr)
         typeList = []
         valueList = []
+        # root child element must have tag `instruction`, it must have `order` attribute with unique,
+        # greater than zero value
+        if instr.tag != 'instruction':
+            sys.stderr.write('ERROR: Child element of program XML is not named "instruction"')
+            exit(32)
         order = instr.attrib['order']
         if int(order) < 1:
             sys.stderr.write('ERROR: Unexpected order value')
@@ -2184,6 +2238,8 @@ if __name__ == '__main__':
             sys.stderr.write('ERROR: Duplicate instruction order')
             exit(32)
         orderStack.append(instr.attrib['order'])
+        # instruction child element must have tag 'argX', where X is 1/2/3 depending on position of that argument
+        # in the IPPcode23 instruction, and it must have `type` attribute
         for x in range(numOfArgs):
             if instr[x].tag != arg_tag[x]:
                 sys.stderr.write('ERROR: XML: bad argX tag')
@@ -2210,6 +2266,3 @@ if __name__ == '__main__':
             if instr.get_opcode() != 'LABEL':
                 instr.execute(instr.get_arg(1), instr.get_arg(2), instr.get_arg(3))
             c.increment_count()
-            # TODO: remove prints
-            # print(instr.get_opcode(), ':', instr.get_arg(1), instr.get_arg(2), instr.get_arg(3))
-        # print(c.get_count())
