@@ -8,6 +8,7 @@ import argparse
 import re
 import sys
 import textwrap
+import xml.etree.ElementTree
 import xml.etree.ElementTree as Tree
 
 
@@ -64,7 +65,11 @@ class Argument:
 
     def __init__(self, arg_type: str, arg_value: str) -> None:
         self._VarType = None
-        self._Type = self._Types[arg_type]
+        try:
+            self._Type = self._Types[arg_type]
+        except KeyError:
+            sys.stderr.write('ERROR: Argument init: unknown argument type')
+            exit(53)
         self._Frame = None
         self._Name = None
         self._Value = None
@@ -428,7 +433,7 @@ class MOVE(Instruction):
     def __init__(self, arg_num: int, arguments: list, types: list) -> None:
         if arg_num != 2:
             sys.stderr.write("ERROR: Instruction MOVE got " + str(arg_num) + " arguments, 2 arguments expected")
-            exit(52)
+            exit(32)
 
         arg1 = Argument(types[0], arguments[0])
         arg2 = Argument(types[1], arguments[1])
@@ -466,7 +471,7 @@ class CREATEFRAME(Instruction):
     def __init__(self, arg_num: int, arguments: list, types: list) -> None:
         if arg_num != 0:
             sys.stderr.write("ERROR: Instruction CREATEFRAME got " + str(arg_num) + " arguments, 0 arguments expected")
-            exit(52)
+            exit(32)
 
         super().__init__("CREATEFRAME")
 
@@ -489,7 +494,7 @@ class PUSHFRAME(Instruction):
     def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 0:
             sys.stderr.write("ERROR: Instruction PUSHFRAME got " + str(arg_num) + " arguments, 0 arguments expected")
-            exit(52)
+            exit(32)
 
         super().__init__("PUSHFRAME")
 
@@ -513,7 +518,7 @@ class POPFRAME(Instruction):
     def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 0:
             sys.stderr.write("ERROR: Instruction POPFRAME got " + str(arg_num) + " arguments, 0 arguments expected")
-            exit(52)
+            exit(32)
 
         super().__init__("POPFRAME")
 
@@ -537,7 +542,7 @@ class DEFVAR(Instruction):
     def __init__(self, arg_num: int, arguments: list, types: list) -> None:
         if arg_num != 1:
             sys.stderr.write("ERROR: Instruction DEFVAR got " + str(arg_num) + " arguments, 1 argument expected")
-            exit(52)
+            exit(32)
 
         arg1 = Argument(types[0], arguments[0])
 
@@ -557,7 +562,7 @@ class DEFVAR(Instruction):
         """
         if f.is_in_frame(arg1.get_name(), arg1.get_frame()):
             sys.stderr.write("ERROR: execute DEFVAR: variable already in frame\n")
-            exit(52)
+            exit(32)
         f.add_var_to_frame(arg1, arg1.get_frame())
 
 
@@ -569,7 +574,7 @@ class CALL(Instruction):
     def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 1:
             sys.stderr.write("ERROR: Instruction CALL got " + str(arg_num) + " arguments, 1 argument expected")
-            exit(52)
+            exit(32)
 
         arg1 = Argument(types[0], arguments[0])
 
@@ -599,7 +604,7 @@ class RETURN(Instruction):
     def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 0:
             sys.stderr.write("ERROR: Instruction RETURN got " + str(arg_num) + " arguments, 0 arguments expected")
-            exit(52)
+            exit(32)
 
         super().__init__("RETURN")
 
@@ -622,7 +627,7 @@ class PUSHS(Instruction):
     def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 1:
             sys.stderr.write("ERROR: Instruction PUSHS got " + str(arg_num) + " arguments, 1 argument expected")
-            exit(52)
+            exit(32)
 
         arg1 = Argument(types[0], arguments[0])
 
@@ -654,7 +659,7 @@ class POPS(Instruction):
     def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 1:
             sys.stderr.write("ERROR: Instruction POPS got " + str(arg_num) + " arguments, 1 argument expected")
-            exit(52)
+            exit(32)
 
         arg1 = Argument(types[0], arguments[0])
 
@@ -684,7 +689,7 @@ class ADD(Instruction):
     def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 3:
             sys.stderr.write("ERROR: Instruction ADD got " + str(arg_num) + " arguments, 3 arguments expected")
-            exit(52)
+            exit(32)
 
         arg1 = Argument(types[0], arguments[0])
         arg2 = Argument(types[1], arguments[1])
@@ -732,7 +737,7 @@ class SUB(Instruction):
     def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 3:
             sys.stderr.write("ERROR: Instruction SUB got " + str(arg_num) + " arguments, 3 arguments expected")
-            exit(52)
+            exit(32)
 
         arg1 = Argument(types[0], arguments[0])
         arg2 = Argument(types[1], arguments[1])
@@ -780,7 +785,7 @@ class MUL(Instruction):
     def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 3:
             sys.stderr.write("ERROR: Instruction MUL got " + str(arg_num) + " arguments, 3 arguments expected")
-            exit(52)
+            exit(32)
 
         arg1 = Argument(types[0], arguments[0])
         arg2 = Argument(types[1], arguments[1])
@@ -828,7 +833,7 @@ class IDIV(Instruction):
     def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 3:
             sys.stderr.write("ERROR: Instruction IDIV got " + str(arg_num) + " arguments, 3 arguments expected")
-            exit(52)
+            exit(32)
 
         arg1 = Argument(types[0], arguments[0])
         arg2 = Argument(types[1], arguments[1])
@@ -881,7 +886,7 @@ class LT(Instruction):
     def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 3:
             sys.stderr.write("ERROR: Instruction LT got " + str(arg_num) + " arguments, 3 arguments expected")
-            exit(52)
+            exit(32)
 
         arg1 = Argument(types[0], arguments[0])
         arg2 = Argument(types[1], arguments[1])
@@ -942,7 +947,7 @@ class GT(Instruction):
     def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 3:
             sys.stderr.write("ERROR: Instruction GT got " + str(arg_num) + " arguments, 3 arguments expected")
-            exit(52)
+            exit(32)
 
         arg1 = Argument(types[0], arguments[0])
         arg2 = Argument(types[1], arguments[1])
@@ -1003,7 +1008,7 @@ class EQ(Instruction):
     def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 3:
             sys.stderr.write("ERROR: Instruction EQ got " + str(arg_num) + " arguments, 3 arguments expected")
-            exit(52)
+            exit(32)
 
         arg1 = Argument(types[0], arguments[0])
         arg2 = Argument(types[1], arguments[1])
@@ -1067,7 +1072,7 @@ class AND(Instruction):
     def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 3:
             sys.stderr.write("ERROR: Instruction AND got " + str(arg_num) + " arguments, 3 arguments expected")
-            exit(52)
+            exit(32)
 
         arg1 = Argument(types[0], arguments[0])
         arg2 = Argument(types[1], arguments[1])
@@ -1115,7 +1120,7 @@ class OR(Instruction):
     def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 3:
             sys.stderr.write("ERROR: Instruction OR got " + str(arg_num) + " arguments, 3 arguments expected")
-            exit(52)
+            exit(32)
 
         arg1 = Argument(types[0], arguments[0])
         arg2 = Argument(types[1], arguments[1])
@@ -1163,7 +1168,7 @@ class NOT(Instruction):
     def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 2:
             sys.stderr.write("ERROR: Instruction NOT got " + str(arg_num) + " arguments, 2 arguments expected")
-            exit(52)
+            exit(32)
 
         arg1 = Argument(types[0], arguments[0])
         arg2 = Argument(types[1], arguments[1])
@@ -1204,7 +1209,7 @@ class INT2CHAR(Instruction):
     def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 2:
             sys.stderr.write("ERROR: Instruction INT2CHAR got " + str(arg_num) + " arguments, 2 arguments expected")
-            exit(52)
+            exit(32)
 
         arg1 = Argument(types[0], arguments[0])
         arg2 = Argument(types[1], arguments[1])
@@ -1249,7 +1254,7 @@ class STRI2INT(Instruction):
     def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 3:
             sys.stderr.write("ERROR: Instruction STRI2INT got " + str(arg_num) + " arguments, 3 arguments expected")
-            exit(52)
+            exit(32)
 
         arg1 = Argument(types[0], arguments[0])
         arg2 = Argument(types[1], arguments[1])
@@ -1311,7 +1316,7 @@ class READ(Instruction):
     def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 2:
             sys.stderr.write("ERROR: Instruction READ got " + str(arg_num) + " arguments, 2 arguments expected")
-            exit(52)
+            exit(32)
 
         arg1 = Argument(types[0], arguments[0])
         arg2 = Argument(types[1], arguments[1])
@@ -1356,12 +1361,14 @@ class READ(Instruction):
                     value = True
                 else:
                     value = False
+            elif in_type == int:
+                value = int(value)
+            elif in_type == str:
+                for ch in set(re.findall(r'\\\d{3}', value)):
+                    value = value.replace(ch, chr(int(ch[1:])))
             else:
-                if in_type == int:
-                    value = int(value)
-                elif in_type == str:
-                    for ch in set(re.findall(r'\\\d{3}', value)):
-                        value = value.replace(ch, chr(int(ch[1:])))
+                sys.stderr.write("ERROR: Instruction READ: type must be int, string or bool")
+                exit(53)
         except (KeyboardInterrupt, IndexError, ValueError):
             value = 'nil'
 
@@ -1372,7 +1379,7 @@ class WRITE(Instruction):
     def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 1:
             sys.stderr.write("ERROR: Instruction WRITE got " + str(arg_num) + " arguments, 1 argument expected")
-            exit(52)
+            exit(32)
 
         arg1 = Argument(types[0], arguments[0])
 
@@ -1391,13 +1398,8 @@ class WRITE(Instruction):
         if arg1.get_type() == 'nil' or arg1.get_var_type() == 'nil':
             val = ''
 
-        # TODO: interpret escape sequences - \032 => whitespace
-        if arg1.get_type() == str or arg1.get_var_type() == str:
-            pass
-
-        # if val is None:
-        #     sys.stderr.write("ERROR: Instruction WRITE: Empty value\n")
-        #     exit(56)
+        if arg1.get_type() == bool or arg1.get_var_type() == bool:
+            val = 'true' if val is True else 'false'
 
         print(val, end='')
 
@@ -1410,7 +1412,7 @@ class CONCAT(Instruction):
     def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 3:
             sys.stderr.write("ERROR: Instruction CONCAT got " + str(arg_num) + " arguments, 3 arguments expected")
-            exit(52)
+            exit(32)
 
         arg1 = Argument(types[0], arguments[0])
         arg2 = Argument(types[1], arguments[1])
@@ -1458,7 +1460,7 @@ class STRLEN(Instruction):
     def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 2:
             sys.stderr.write("ERROR: Instruction STRLEN got " + str(arg_num) + " arguments, 2 arguments expected")
-            exit(52)
+            exit(32)
 
         arg1 = Argument(types[0], arguments[0])
         arg2 = Argument(types[1], arguments[1])
@@ -1499,7 +1501,7 @@ class GETCHAR(Instruction):
     def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 3:
             sys.stderr.write("ERROR: Instruction GETCHAR got " + str(arg_num) + " arguments, 3 arguments expected")
-            exit(52)
+            exit(32)
 
         arg1 = Argument(types[0], arguments[0])
         arg2 = Argument(types[1], arguments[1])
@@ -1553,7 +1555,7 @@ class SETCHAR(Instruction):
     def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 3:
             sys.stderr.write("ERROR: Instruction SETCHAR got " + str(arg_num) + " arguments, 3 arguments expected")
-            exit(52)
+            exit(32)
 
         arg1 = Argument(types[0], arguments[0])
         arg2 = Argument(types[1], arguments[1])
@@ -1612,7 +1614,7 @@ class TYPE(Instruction):
     def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 2:
             sys.stderr.write("ERROR: Instruction TYPE got " + str(arg_num) + " arguments, 2 arguments expected")
-            exit(52)
+            exit(32)
 
         arg1 = Argument(types[0], arguments[0])
         arg2 = Argument(types[1], arguments[1])
@@ -1662,7 +1664,7 @@ class LABEL(Instruction):
     def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 1:
             sys.stderr.write("ERROR: Instruction LABEL got " + str(arg_num) + " arguments, 1 argument expected")
-            exit(52)
+            exit(32)
 
         arg1 = Argument(types[0], arguments[0])
 
@@ -1691,7 +1693,7 @@ class JUMP(Instruction):
     def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 1:
             sys.stderr.write("ERROR: Instruction JUMP got " + str(arg_num) + " arguments, 1 argument expected")
-            exit(52)
+            exit(32)
 
         arg1 = Argument(types[0], arguments[0])
 
@@ -1720,7 +1722,7 @@ class JUMPIFEQ(Instruction):
     def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 3:
             sys.stderr.write("ERROR: Instruction JUMPIFEQ got " + str(arg_num) + " arguments, 3 arguments expected")
-            exit(52)
+            exit(32)
 
         arg1 = Argument(types[0], arguments[0])
         arg2 = Argument(types[1], arguments[1])
@@ -1785,7 +1787,7 @@ class JUMPIFNEQ(Instruction):
     def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 3:
             sys.stderr.write("ERROR: Instruction JUMPIFNEQ got " + str(arg_num) + " arguments, 3 arguments expected")
-            exit(52)
+            exit(32)
 
         arg1 = Argument(types[0], arguments[0])
         arg2 = Argument(types[1], arguments[1])
@@ -1843,7 +1845,7 @@ class EXIT(Instruction):
     def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 1:
             sys.stderr.write("ERROR: Instruction EXIT got " + str(arg_num) + " arguments, 1 argument expected")
-            exit(52)
+            exit(32)
 
         arg1 = Argument(types[0], arguments[0])
 
@@ -1877,7 +1879,7 @@ class DPRINT(Instruction):
     def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 1:
             sys.stderr.write("ERROR: Instruction DPRINT got " + str(arg_num) + " arguments, 1 argument expected")
-            exit(52)
+            exit(32)
 
         arg1 = Argument(types[0], arguments[0])
 
@@ -1902,9 +1904,8 @@ class DPRINT(Instruction):
         if arg1.get_type() == 'nil' or arg1.get_var_type() == 'nil':
             val = ''
 
-        # TODO: interpret escape sequences - \032 => whitespace
-        if arg1.get_type() == str or arg1.get_var_type() == str:
-            pass
+        if arg1.get_type() == bool or arg1.get_var_type() == bool:
+            val = 'true' if val is True else 'false'
 
         sys.stderr.write(val)
 
@@ -1917,7 +1918,7 @@ class BREAK(Instruction):
     def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 0:
             sys.stderr.write("ERROR: Instruction BREAK got " + str(arg_num) + " arguments, 0 arguments expected")
-            exit(52)
+            exit(32)
 
         super().__init__("BREAK")
 
@@ -2015,7 +2016,7 @@ class Factory:
             return BREAK(num_of_args, value_list, type_list)
         else:
             sys.stderr.write('ERROR: unknown instruction\n')
-            exit(52)
+            exit(32)
 
 
 # ______ERRORS______
@@ -2051,7 +2052,14 @@ if __name__ == '__main__':
     f = Frame()
     s = Stack()
     #   Parsing arguments
+    if len(sys.argv) != 2:
+        for arg in sys.argv:
+            if arg == '-h' or arg == '--help':
+                sys.stderr.write('ERROR: help has to be the only argument passed')
+                exit(10)
+
     parser = argparse.ArgumentParser(
+        exit_on_error=False,
         description='Python interpreter of IPPcode23',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=textwrap.dedent('''\
@@ -2061,7 +2069,11 @@ if __name__ == '__main__':
     parser.add_argument("--source", metavar='file', type=argparse.FileType('r'), help='file containing XML code')
     parser.add_argument("--input", metavar='file', type=argparse.FileType('r'),
                         help='input of XML instructions (e.g. READ)')
-    args = parser.parse_args()
+    try:
+        args = parser.parse_args()
+    except argparse.ArgumentError or argparse.ArgumentTypeError:
+        sys.stderr.write('ERROR: argparse')
+        exit(11)
 
     # Check availability of source and input files
     root: Tree.Element
@@ -2077,23 +2089,35 @@ if __name__ == '__main__':
         with fileinput.input('-') as fil:
             for line in fil:
                 SourceString += line
-        root = Tree.fromstring(SourceString)
+        try:
+            root = Tree.fromstring(SourceString)
+        except xml.etree.ElementTree.ParseError:
+            sys.stderr.write('ERROR: XML parse')
+            exit(31)
 
         with open(args.input.name, encoding=args.input.encoding) as In:
             InputFile = In.read()
 
     #  Only source file
     elif args.input is None:
-        # noinspection PyUnresolvedReferences
-        with open(args.source.name, encoding=args.source.encoding) as SourceFile:
-            tree = Tree.parse(SourceFile)
-            root = tree.getroot()
+        try:
+            # noinspection PyUnresolvedReferences
+            with open(args.source.name, encoding=args.source.encoding) as SourceFile:
+                tree = Tree.parse(SourceFile)
+                root = tree.getroot()
+        except xml.etree.ElementTree.ParseError:
+            sys.stderr.write('ERROR: XML parse')
+            exit(31)
 
     #   Both files
     else:
-        with open(args.source.name, encoding=args.source.encoding) as SourceFile:
-            tree = Tree.parse(SourceFile)
-            root = tree.getroot()
+        try:
+            with open(args.source.name, encoding=args.source.encoding) as SourceFile:
+                tree = Tree.parse(SourceFile)
+                root = tree.getroot()
+        except xml.etree.ElementTree.ParseError:
+            sys.stderr.write('ERROR: XML parse')
+            exit(31)
 
         with open(args.input.name, encoding=args.input.encoding) as In:
             InputFile = In.read()
@@ -2101,32 +2125,51 @@ if __name__ == '__main__':
     # noinspection PyUnboundLocalVariable
     if root.tag != 'program':
         sys.stderr.write('ERROR: No "program" root of XML')
-        exit(31)
+        exit(32)
 
+    try:
+        if root.attrib['language'] != 'IPPcode23':
+            sys.stderr.write('ERROR: No "IPPcode23" language tag in root of XML')
+            exit(32)
+    except KeyError:
+        sys.stderr.write('ERROR: Missing language tag in XML')
+        exit(32)
+
+    # if input is file, split content by lines and reverse their order so that Input.pop() returns correct input
     if args.input:
         # noinspection PyUnboundLocalVariable
         Input = list(InputFile.splitlines())
         Input.reverse()
-    # for element in Input:
-    #     s.push(element, 'I')
 
-    # Sort instructions, non-author code from:
-    #    https://devdreamz.com/question/931441-python-sort-xml-elements-by-and-tag-and-attributes-recursively
-    root[:] = sorted(root, key=lambda child: (child.tag, int(child.get('order'))))
-    # slightly altered continuation of code from the same site
+    try:
+        # Sort instructions, non-author code from:
+        #    https://devdreamz.com/question/931441-python-sort-xml-elements-by-and-tag-and-attributes-recursively
+        root[:] = sorted(root, key=lambda child: (child.tag, int(child.get('order'))))
+        # slightly altered continuation of code from the same site
+        for instr in root:
+            attrib = instr.attrib
+            if len(attrib) > 1:
+                instr[:] = sorted(instr, key=lambda child: (child.tag, child.get('desc')))
+                attribs = sorted(attrib.items())
+                attrib.clear()
+                # noinspection PyTypeChecker
+                attrib.update(attribs)
+            # end of non-author code
 
-    for instr in root:
-        attrib = instr.attrib
-        if len(attrib) > 1:
-            instr[:] = sorted(instr, key=lambda child: (child.tag, child.get('desc')))
-            attribs = sorted(attrib.items())
-            attrib.clear()
-            # noinspection PyTypeChecker
-            attrib.update(attribs)
-    # end of non-author code
+            if instr.tag != 'instruction':
+                sys.stderr.write('ERROR: Child element of program XML is not named "instruction"')
+                exit(32)
+    except ValueError:
+        sys.stderr.write('ERROR: Unexpected order value')
+        exit(32)
 
     orderStack = []
 
+    arg_tag = {
+        0: 'arg1',
+        1: 'arg2',
+        2: 'arg3'
+    }
     i: Instruction
     instrCount = 0
     for instr in root:
@@ -2134,11 +2177,17 @@ if __name__ == '__main__':
         typeList = []
         valueList = []
         order = instr.attrib['order']
+        if int(order) < 1:
+            sys.stderr.write('ERROR: Unexpected order value')
+            exit(32)
         if order in orderStack:
-            sys.stderr.write('ERROR: duplicate instruction order')
+            sys.stderr.write('ERROR: Duplicate instruction order')
             exit(32)
         orderStack.append(instr.attrib['order'])
         for x in range(numOfArgs):
+            if instr[x].tag != arg_tag[x]:
+                sys.stderr.write('ERROR: XML: bad argX tag')
+                exit(32)
             typeList.append(instr[x].attrib['type'])
             valueList.append(instr[x].text)
 
