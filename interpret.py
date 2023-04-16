@@ -1,10 +1,9 @@
-#   David Novak
-#   xnovak2r
-#   IPP proj 2 - Python interpreter
-#   april 2023
+# Project 2 Implementation for IPP 2022/2023
+# Name and surname: David Novak
+# Login: xnovak2r
 
-import fileinput
 import argparse
+import fileinput
 import re
 import sys
 import textwrap
@@ -13,7 +12,8 @@ import xml.etree.ElementTree as Tree
 
 class Counter:
     """
-    Object serves as a program counter. Current value is stored in the `_Count` variable.
+    Object serves as a program counter.
+    The current value is stored in the `_Count` variable.
     :var _Count: `int`
     """
 
@@ -22,26 +22,26 @@ class Counter:
 
     def get_count(self) -> int:
         """
-        Method which returns current count
+        Method, which returns current count
         :return: _Count
         """
         return self._Count
 
     def increment_count(self) -> None:
         """
-        Method which adds 1 to current count
+        Method, which adds 1 to current count
         """
         self._Count += 1
 
     def reset_count(self) -> None:
         """
-        Method which resets current count back to 0
+        Method, which resets the current count back to 0
         """
         self._Count = 0
 
     def set_count(self, num: int) -> None:
         """
-        Method which sets program counter to a specific number. It is used by all jump instructions.
+        Method, which sets program counter to a specific number. It is used by all jump instructions.
         :param num: number used as the new counter count
         """
         self._Count = num
@@ -49,8 +49,9 @@ class Counter:
 
 class Argument:
     """
-    Object Argument is used by instructions, it is derivative from XML arg element. _VarType, _Frame and _Name are
-    None unless _Type is `var`. The specific _Value is based on _Type/_VarType
+    Object Argument is used by instructions, it is derivative from an XML arg element.
+    _VarType, _Frame, and _Name are None unless _Type is `var`.
+    The specific _Value is based on _Type/_VarType
     :var _Type: `_Types`
     :var _Value:
     :var _VarType: var
@@ -86,7 +87,7 @@ class Argument:
                 self._Value = int(arg_value)
             except ValueError:
                 sys.stderr.write('ERROR: Argument init: wrong int argument value')
-                exit(53)
+                exit(32)
         elif self._Type == str:
             if arg_value is None:
                 self._Value = ''
@@ -94,7 +95,7 @@ class Argument:
                 for ch in set(re.findall(r'\\\d{3}', arg_value)):
                     arg_value = arg_value.replace(ch, chr(int(ch[1:])))
                 self._Value = arg_value
-        elif self._Type == "nil":
+        elif self._Type == "nil" and arg_value == 'nil':
             self._Value = 'nil'
         elif self._Type == bool:
             if arg_value.upper() == 'TRUE':
@@ -103,15 +104,18 @@ class Argument:
                 self._Value = False
             else:
                 sys.stderr.write("ERROR: Argument init: wrong bool argument value\n")
-                exit(53)
+                exit(32)
         elif self._Type == type:
             if arg_value in ('int', 'string', 'bool', 'nil'):
                 self._Value = self._Types[arg_value]
             else:
                 sys.stderr.write("ERROR: Argument init: wrong type argument value\n")
-                exit(53)
+                exit(32)
         elif self._Type == 'label':
             self._Value = arg_value
+        else:
+            sys.stderr.write('ERROR: Argument init: incorrect type + value combination')
+            exit(32)
 
     def get_type(self) -> type:
         return self._Type
@@ -119,7 +123,7 @@ class Argument:
     def get_value(self) -> _Types:
         """
         Method returns value of Argument.
-        :return: `value` of type in _Types
+        :return: `value` of a type in _Types
         """
         if self._Value is None:
             sys.stderr.write("ERROR: Argument get_value(): Empty value\n")
@@ -160,13 +164,9 @@ class Argument:
 
     def get_name(self) -> str:
         """
-        Method returns name of a variable if Argument is a variable or None if it isn't.
+        Method returns name of a variable if an Argument is a variable or None if it isn't.
         """
-        # try:
         return self._Name
-        # except AttributeError:
-        #     sys.stderr.write("ERROR: Argument get_name(): argument is not variable\n")
-        #     exit(53)
 
     def set_frame(self, frame: str) -> None:
         """
@@ -214,21 +214,21 @@ class Instruction:
 
     def get_opcode(self) -> str:
         """
-        Method which returns the IPPcode23 instruction code
+        Method, which returns the IPPcode23 instruction code
         :return: Opcode
         """
         return self._Opcode
 
     def get_list(self) -> list:
         """
-        Method which returns list of all instructions in current program.
+        Method which returns list of all instructions in the current program.
         :return: InstructionList
         """
         return self._InstructionList
 
     def get_arg(self, arg_num: int) -> Argument:
         """
-        Method which returns argument specified by the arg_num parameter.
+        Method, which returns argument specified by the arg_num parameter.
         :param arg_num: 1 | 2 | 3
         :return: arg1 | arg2 | arg3
         """
@@ -240,13 +240,13 @@ class Instruction:
 
 class Stack:
     """
-    Stack is a class containing 3 different stack. Stacks are implemented as lists and are needed for correct
+    Stack is a class containing 3 different stacks. Stacks are implemented as lists and are needed for the correct
     function of different IPPcode23 instructions.
-    :var _LabelStack: LABEL, JUMP(s) - NOT really a stack
+    :var _Labels: LABEL, JUMP(s) - NOT really a stack
     :var _DataStack: PUSHS, POPS
     :var _CallStack: CALL, RETURN
     """
-    _LabelStack = []  # _LabelStack = [[LABEL,NUMBER],[LABEL2,NUMBER2],...]
+    _Labels = []  # _Labels = [[LABEL,NUMBER],[LABEL2,NUMBER2],...]
     _DataStack = []
     _CallStack = []
 
@@ -257,11 +257,11 @@ class Stack:
         :param stack: L | D | C
         """
         if stack == "L":  # stack().push([arg1.getvalue(), c.get_count()]
-            for num in range(len(self._LabelStack)):
-                if val[0] in self._LabelStack[num][0]:
+            for num in range(len(self._Labels)):
+                if val[0] in self._Labels[num][0]:
                     sys.stderr.write("ERROR: Stack push(): label already exists\n")
                     exit(52)
-            self._LabelStack.append(val)
+            self._Labels.append(val)
         elif stack == "D":
             self._DataStack.append(val)
         elif stack == "C":
@@ -299,9 +299,9 @@ class Stack:
         """
         ret = ''
         if stack == "L":
-            if len(self._LabelStack):
+            if len(self._Labels):
                 ret += 'name:count:: '
-                for label in self._LabelStack:
+                for label in self._Labels:
                     ret += label[0]
                     ret += ':'
                     ret += str(label[1])
@@ -328,14 +328,14 @@ class Stack:
 
     def jump(self, name: str) -> int:
         """
-        Method jump returns a number that will be used by the program counter to execute correct
+        Method jump returns a number that will be used by the program counter to execute the correct
         instruction after a JUMP instruction.
-        :param name: name of the label program jumps to
+        :param name: the name of the label program jumps to
         :return: number for counter
         """
-        for num in range(len(self._LabelStack)):
-            if name in self._LabelStack[num][0]:
-                return self._LabelStack[num][1]
+        for num in range(len(self._Labels)):
+            if name in self._Labels[num][0]:
+                return self._Labels[num][1]
         sys.stderr.write("ERROR: Stack jump(): label doesn't exists\n")
         exit(52)
 
@@ -347,8 +347,8 @@ class Frame:
     `PushFrame` needs to be called. This will create LT from TF and make TF undefined again. If LF was already defined,
     another use of `PushFrame` will hide the current LF and to use them again instruction `PopFrame` needs to be called.
     :var _GlobalFrame: contains global variables
-    :var _TemporaryFrame: contains variables in temporary frame
-    :var _FrameStack: contains pushed temporary frames
+    :var _TemporaryFrame: contains variables in TF
+    :var _FrameStack: top of the stack is regarded as LF
     """
     _GlobalFrame = []
     _FrameStack = []
@@ -389,7 +389,7 @@ class Frame:
 
     def add_var_to_frame(self, var: Argument, frame: str) -> None:
         """
-        Method which adds variable specified by param `var` to a frame specified by param `frame`. Local and temporary
+        Method, which adds variable specified by param `var` to a frame specified by param `frame`. Local and temporary
         frames have to be defined first.
         :param var: Argument of type 'var'
         :param frame: LF | GF | TF
@@ -411,7 +411,7 @@ class Frame:
     #
     def get_var(self, name: str, frame: str) -> Argument:
         """
-        Method returns variable if variable with name specified by param `name` is declared inside of frame specified
+        Method returns variable if variable with name specified by param `name` is declared inside frame specified
         by param `frame` exists.
         :param name: name of variable
         :param frame: LT | GF | TF
@@ -576,7 +576,7 @@ class POPFRAME(Instruction):
     @classmethod
     def execute(cls, arg1: Argument | None, arg2: Argument | None, arg3: Argument | None) -> None:
         """
-        Transfer all variables in from the top of frame stack to temporary frame and changes frame of said variables
+        Transfer all variables in from the top of frame stack to temporary frame and change the frame of said variables
         from LF to LT.
         :param arg1: None
         :param arg2: None
@@ -691,7 +691,7 @@ class PUSHS(Instruction):
     @classmethod
     def execute(cls, arg1: Argument | None, arg2: Argument | None, arg3: Argument | None) -> None:
         """
-        Adds value of arg1 to the top of data stack.
+        Adds the value of arg1 to the top of data stack.
         :param arg1: symb
         :param arg2: None
         :param arg3: None
@@ -1078,7 +1078,7 @@ class EQ(Instruction):
     def execute(cls, arg1: Argument | None, arg2: Argument | None, arg3: Argument | None) -> None:
         """
         Saves True to a variable specified by arg1 if arg2 == arg3 and saves False if it isn't.
-        Arg2 and arg3 need to be of the same type or at least one of them needs to be of type nil.
+        Arg2 and arg3 need to be of the same type, or at least one of them needs to be of type nil.
         Comparing nil and value other than nil saves False to arg1.
         :param arg1: var
         :param arg2: symb
@@ -1107,8 +1107,6 @@ class EQ(Instruction):
                              "unless one of them is of type nil")
             exit(53)
 
-        # TODO: write about this in documentation
-        # TODO: symb nil => false
         if type1 != type2:
             arg1.set_value(False)
         else:
@@ -1141,7 +1139,7 @@ class AND(Instruction):
     @classmethod
     def execute(cls, arg1: Argument | None, arg2: Argument | None, arg3: Argument | None) -> None:
         """
-        Saves result of logical operation `and` between arg2 and arg3 into a variable specified by arg1.
+        Saves a result of logical operation `and` between arg2 and arg3 into a variable specified by arg1.
         :param arg1: var
         :param arg2: bool
         :param arg3: bool
@@ -1189,7 +1187,7 @@ class OR(Instruction):
     @classmethod
     def execute(cls, arg1: Argument | None, arg2: Argument | None, arg3: Argument | None) -> None:
         """
-        Saves result of logical operation `or` between arg2 and arg3 into a variable specified by arg1.
+        Saves a result of logical operation `or` between arg2 and arg3 into a variable specified by arg1.
         :param arg1: var
         :param arg2: bool
         :param arg3: bool
@@ -1385,7 +1383,7 @@ class READ(Instruction):
     def execute(cls, arg1: Argument | None, arg2: Argument | None, arg3: Argument | None) -> None:
         """
         Reads a value from stdin, converts it to type arg2 and saves said value to arg1.
-        In case of an invalid or empty an input saves value nil of type nil.
+        In case of an invalid or empty input, saves value nil of type nil.
         :param arg1: var
         :param arg2: type
         :param arg3: None
@@ -1427,6 +1425,10 @@ class READ(Instruction):
 
 
 class WRITE(Instruction):
+    """
+    Instruction WRITE from IPPcode23 requires 1 argument of type symbol.
+    """
+
     def __init__(self, arg_num: int, arguments: list, types: list):
         if arg_num != 1:
             sys.stderr.write("ERROR: Instruction WRITE got " + str(arg_num) + " arguments, 1 argument expected")
@@ -1442,6 +1444,12 @@ class WRITE(Instruction):
 
     @classmethod
     def execute(cls, arg1: Argument | None, arg2: Argument | None, arg3: Argument | None) -> None:
+        """
+        Prints value of arg1 to stdout. Nil => empty string; True/False => true/false.
+        :param arg1: symb
+        :param arg2: None
+        :param arg3: None
+        """
         if arg1.is_variable():
             arg1 = f.get_var(arg1.get_name(), arg1.get_frame())
 
@@ -1681,7 +1689,7 @@ class TYPE(Instruction):
     @classmethod
     def execute(cls, arg1: Argument | None, arg2: Argument | None, arg3: Argument | None) -> None:
         """
-        Finds out type of constant (int, string, nil, bool) of arg2 and writes the result as a string to a variable
+        Finds out a type of constant (int, string, nil, bool) of arg2 and writes the result as a string to a variable
         specified by arg1.
         :param arg1: var
         :param arg2: symb
@@ -1793,17 +1801,11 @@ class JUMPIFEQ(Instruction):
         """
         Jumps to a label specified by arg1 if arg2 and arg3 are equal. It doesn't utilize instruction EQ because that
         would require defining a variable in a known Frame which might cause problems if a variable of the same name
-        would be used by program.
+        was used in the program.
         :param arg1: label
         :param arg2: symb
         :param arg3: symb
         """
-        # arg = Argument('var', 'GF@MyTinyGlobalTemporaryVariableUsedBySomeInstructionsWithSillyButUniqueEnoughName000')
-        # DEFVAR.execute(arg, None, None)
-        # EQ.execute(arg, arg2, arg3)
-        # if arg.get_value():
-        #     JUMP.execute(arg1, None, None)
-
         type1 = arg2.get_type()
         type2 = arg3.get_type()
 
@@ -2127,7 +2129,7 @@ if __name__ == '__main__':
         sys.stderr.write('ERROR: argparse')
         exit(11)
 
-    # Check availability of source and input files and try to parse the source XML:
+    # Check the availability of source and input files and try to parse the source XML:
     root: Tree.Element
     InputFile: str
     # No file - ERROR
@@ -2220,7 +2222,7 @@ if __name__ == '__main__':
     i: Instruction
     instrCount = 0
 
-    # check children of root element (instructions) and their children (arguments)
+    # check children of a root element (instructions) and their children (arguments)
     for instr in root:
         numOfArgs = len(instr)
         typeList = []
@@ -2238,7 +2240,7 @@ if __name__ == '__main__':
             sys.stderr.write('ERROR: Duplicate instruction order')
             exit(32)
         orderStack.append(instr.attrib['order'])
-        # instruction child element must have tag 'argX', where X is 1/2/3 depending on position of that argument
+        # instruction child element must have tag 'argX', where X is 1/2/3 depending on the position of that argument
         # in the IPPcode23 instruction, and it must have `type` attribute
         for x in range(numOfArgs):
             if instr[x].tag != arg_tag[x]:
