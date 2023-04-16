@@ -454,15 +454,15 @@ class Frame:
             exit(55)
 
     #
-    def is_in_frame(self, argument, frame: str) -> bool:
+    def is_in_frame(self, name: str, frame: str) -> bool:
         """
         Method returns True if variable with given name and frame is already in frame and False if it isn't.
-        :param argument: name of variable
+        :param name: name of variable
         :param frame: LF | GF | TF
         """
         try:
             for variable in self.return_frame(frame):
-                if argument == variable:
+                if name == variable.get_name():
                     return True
             return False
         except TypeError:
@@ -613,7 +613,7 @@ class DEFVAR(Instruction):
         """
         if f.is_in_frame(arg1.get_name(), arg1.get_frame()):
             sys.stderr.write("ERROR: execute DEFVAR: variable already in frame\n")
-            exit(32)
+            exit(52)
         f.add_var_to_frame(arg1, arg1.get_frame())
 
 
