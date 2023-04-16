@@ -2249,7 +2249,13 @@ if __name__ == '__main__':
             typeList.append(instr[x].attrib['type'])
             valueList.append(instr[x].text)
 
-        i = Factory.resolve(instr.attrib['opcode'], numOfArgs, valueList, typeList)
+        try:
+            opcode = instr.attrib['opcode']
+        except KeyError:
+            sys.stderr.write('ERROR: Missing value of the `opcode` attribute')
+            exit(32)
+
+        i = Factory.resolve(opcode, numOfArgs, valueList, typeList)
         instrCount += 1
 
     if instrCount:
