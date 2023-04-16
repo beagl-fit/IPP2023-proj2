@@ -926,7 +926,7 @@ class IDIV(Instruction):
             sys.stderr.write("ERROR: Instruction IDIV: zero division")
             exit(57)
 
-        arg1.set_value(arg2.get_value() / val)
+        arg1.set_value(int(arg2.get_value() / val))
 
 
 class LT(Instruction):
